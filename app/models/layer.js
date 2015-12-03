@@ -8,9 +8,10 @@ var storePath;
 /************************ Modèle ***********************/
 /*******************************************************/
 
-function Layer (name, source) {
+function Layer (name, source, tables) {
     this.name = name;
     this.source = source;
+    this.tables = Array.from(tables);
 }
 
 module.exports.Layer = Layer;
@@ -24,6 +25,9 @@ function isValidLayer (obj) {
         return false;
     }
     if (obj.source == null) {
+        return false;
+    }
+    if (obj.tables == null || ! Array.isArray(obj.tables) || obj.tables.length == 0) {
         return false;
     }
     if (Database.getOne(obj.source) == null) {
@@ -41,7 +45,7 @@ function createLayer(obj, save) {
             throw new Exceptions.ConflictException("Provided layer owns a name already used");
         }
 
-        var lay = new Layer(obj.name, obj.source);
+        var lay = new Layer(obj.name, obj.source, obj.tables);
         loadedLayers[lay.name] = lay;
 
         if (save != null && save) {
@@ -86,7 +90,7 @@ function updateLayer (name, obj) {
 
     if (isValidLayer(obj)) {
 
-        var lay = new Layer(obj.name, obj.source);
+        var lay = new Layer(obj.name, obj.source, obj.tables);
         loadedLayers[lay.name] = lay;
 
         var jsonLay = JSON.stringify(lay);

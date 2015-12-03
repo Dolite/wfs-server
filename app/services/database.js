@@ -67,5 +67,5 @@ module.exports.getNumber = function () {
 }
 
 module.exports.load = function (dir) {
-    Database.loaddir
+    Database.load(dir);
 }

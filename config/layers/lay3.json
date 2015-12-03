@@ -1,4 +1,5 @@
 {
     "name":"lay3",
-    "source":"db3"
+    "source":"db2",
+    "tables":["abenon"]
 }

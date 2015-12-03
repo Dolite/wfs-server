@@ -7,7 +7,9 @@
     "body-parser": "^1.14.1",
     "express": "^4.13.3",
     "minimist": "^1.2.0",
-    "nodemon": "^1.8.1"
+    "nodemon": "^1.8.1",
+    "pg": "^4.4.3",
+    "pg-query": "^0.11.0"
   },
   "scripts": {
     "start": "node app.js"

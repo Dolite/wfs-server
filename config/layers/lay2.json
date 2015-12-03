@@ -1,4 +1,5 @@
 {
     "name":"lay2",
-    "source":"db1"
+    "source":"db1",
+    "tables":["toto","titi"]
 }

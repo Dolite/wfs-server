@@ -33,6 +33,14 @@ console.log('WFS server started on port ' + port);
 var app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+// Case insensitive for request query
+app.use(function(req, res, next) {
+  for (var key in req.query)
+  { 
+    req.query[key.toLowerCase()] = req.query[key];
+  }
+  next();
+});
 app.use('/', routing);
 
 var clean = function () {
