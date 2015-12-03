@@ -1,0 +1,10 @@
+{
+    "server":{
+        "port":1234
+    },
+    "config":{
+        "requestsDir":"C:/Users/nodejs/nodejs/wfs-server/config/requests",
+        "layersDir":"C:/Users/nodejs/nodejs/wfs-server/config/layers",
+        "databasesDir":"C:/Users/nodejs/nodejs/wfs-server/config/databases"
+    }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "wfs-server",
+  "version": "1.0.0",
+  "description": "WFS server",
+  "main": "app.js",
+  "dependencies": {
+    "body-parser": "^1.14.1",
+    "express": "^4.13.3",
+    "minimist": "^1.2.0",
+    "nodemon": "^1.8.1"
+  },
+  "scripts": {
+    "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dolite/wfs-server.git"
+  },
+  "keywords": [
+    "WFS"
+  ],
+  "author": "Dolite"
+}
