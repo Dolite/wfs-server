@@ -9,7 +9,7 @@ module.exports.getCapabilities = function (req, res) {
     var layersGC = [];
     for (var layerName in layers) {
         var tables = layers[layerName].tables;
-        layersGC.push({"tables":tables, "layerName":layerName, "title":"Titre de "+layerName});
+        layersGC.push({"tables":tables, "layerName":layerName, "title":"Titre de "+layerName, "maxFeatureCount":layers[layerName].maxFeatureCount});
     }
     gc.layers = layersGC;
     res.status(200).json(gc);

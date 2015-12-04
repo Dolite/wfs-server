@@ -2,20 +2,20 @@ var express = require('express');
 var router = express.Router();
 
 var LayerService = require('../services/layer');
-var DatabaseService = require('../services/database');
+var DatasourceService = require('../services/datasource');
 var RequestService = require('../services/request');
 
 router.route('/reload')
     .put(function(req, res) {
         console.log("Reload configuration");
         try {
-            DatabaseService.load();
+            DatasourceService.load();
             LayerService.load();
             RequestService.load();
 
             res.status(200).json({
                 "message" : "Reload OK",
-                "databases" : DatabaseService.getNumber(),
+                "datasources" : DatasourceService.getNumber(),
                 "layers" : LayerService.getNumber(),
                 "requests" : RequestService.getNumber()
             });
@@ -49,28 +49,28 @@ router.route('/layer/:name')
         LayerService.delete(req, res);
     });
 
-/* DATABASE */
-router.route('/database')
+/* datasource */
+router.route('/datasource')
     .get(function(req, res) {
-        console.log("Getting all databases");
-        DatabaseService.getAll(req, res);
+        console.log("Getting all datasources");
+        DatasourceService.getAll(req, res);
     })
     .post(function(req, res) {
-        console.log("Create new database");
-        DatabaseService.create(req, res);
+        console.log("Create new datasource");
+        DatasourceService.create(req, res);
     });
-router.route('/database/:name')
+router.route('/datasource/:name')
     .get(function(req, res) {
-        console.log("Get database " + req.params.name);
-        DatabaseService.getOne(req, res);
+        console.log("Get datasource " + req.params.name);
+        DatasourceService.getOne(req, res);
     })
     .put(function(req, res) {
-        console.log("Update database " + req.params.name);
-        DatabaseService.update(req, res);
+        console.log("Update datasource " + req.params.name);
+        DatasourceService.update(req, res);
     })
     .delete(function(req, res) {
-        console.log("Delete database " + req.params.name);
-        DatabaseService.delete(req, res);
+        console.log("Delete datasource " + req.params.name);
+        DatasourceService.delete(req, res);
     });
 
 /* REQUEST */

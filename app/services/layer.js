@@ -66,6 +66,6 @@ module.exports.getNumber = function () {
     return Object.keys(Layer.getAll()).length;
 }
 
-module.exports.load = function (dir) {
-    Layer.load(dir);
+module.exports.load = function (dir, max) {
+    Layer.load(dir, max);
 }

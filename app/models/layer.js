@@ -1,16 +1,22 @@
 var fs = require('fs');
 var Exceptions = require('./exceptions');
-var Database = require('./database')
+var Database = require('./datasource')
 
 var storePath;
+var defaultMaxFeatureCount;
 
 /*******************************************************/
 /************************ Modèle ***********************/
 /*******************************************************/
 
-function Layer (name, source, tables) {
+function Layer (name, source, tables, max) {
     this.name = name;
+    
     this.source = source;
+
+    if (max == null) max = defaultMaxFeatureCount;
+    this.maxFeatureCount = max;
+
     this.tables = Array.from(tables);
 }
 
@@ -45,7 +51,7 @@ function createLayer(obj, save) {
             throw new Exceptions.ConflictException("Provided layer owns a name already used");
         }
 
-        var lay = new Layer(obj.name, obj.source, obj.tables);
+        var lay = new Layer(obj.name, obj.source, obj.tables, obj.maxFeatureCount);
         loadedLayers[lay.name] = lay;
 
         if (save != null && save) {
@@ -90,7 +96,7 @@ function updateLayer (name, obj) {
 
     if (isValidLayer(obj)) {
 
-        var lay = new Layer(obj.name, obj.source, obj.tables);
+        var lay = new Layer(obj.name, obj.source, obj.tables, obj.maxFeatureCount);
         loadedLayers[lay.name] = lay;
 
         var jsonLay = JSON.stringify(lay);
@@ -130,8 +136,10 @@ module.exports.getOne = getLayer;
 /****************** Chargement complet *****************/
 /*******************************************************/
 
-function loadLayers(dir) {
+function loadLayers(dir, max) {
     if (dir != null) storePath = dir;
+    if (max != null) defaultMaxFeatureCount = max;
+
     console.log("Browse layers' directory "+storePath);
 
     try {

@@ -1,5 +1,5 @@
 var LayerService = require('../services/layer');
-var DatabaseService = require('../services/database');
+var DatasourceService = require('../services/datasource');
 var RequestService = require('../services/request');
 var Exceptions = require('../models/exceptions');
 var fs = require('fs');
@@ -30,18 +30,23 @@ function load (file) {
         throw new Exceptions.ConfigurationErrorException("Layers' directory have to be provided in the configuration file (config / layersDir) : " + file);
     }
 
-    if (config.config.databasesDir == null) {
-        throw new Exceptions.ConfigurationErrorException("Databases' directory have to be provided in the configuration file (config / databasesDir) : " + file);   
+    if (config.config.datasourcesDir == null) {
+        throw new Exceptions.ConfigurationErrorException("Datasources' directory have to be provided in the configuration file (config / datasourcesDir) : " + file);   
     }
 
     if (config.config.requestsDir == null) {
         throw new Exceptions.ConfigurationErrorException("Requests' directory have to be provided in the configuration file (config / requestsDir) : " + file);   
     }
 
+    if (config.service.maxFeatureCount == null) {
+        console.log("No default maxFeatureCount defined in 'service' section : it will be 500");
+        config.service.maxFeatureCount = 500;   
+    }
+
     try {
-        DatabaseService.load(config.config.databasesDir);
-        console.log(DatabaseService.getNumber() + " database(s) loaded");
-        LayerService.load(config.config.layersDir);
+        DatasourceService.load(config.config.datasourcesDir);
+        console.log(DatasourceService.getNumber() + " datasource(s) loaded");
+        LayerService.load(config.config.layersDir, config.service.maxFeatureCount);
         console.log(LayerService.getNumber() + " layer(s) loaded");
         RequestService.load(config.config.requestsDir);
         console.log(RequestService.getNumber() + " request(s) loaded");
