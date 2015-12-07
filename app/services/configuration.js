@@ -1,6 +1,6 @@
 var LayerService = require('../services/layer');
 var DatasourceService = require('../services/datasource');
-var RequestService = require('../services/request');
+var StoredQueryService = require('../services/storedQuery');
 var Exceptions = require('../models/exceptions');
 var fs = require('fs');
 
@@ -34,8 +34,8 @@ function load (file) {
         throw new Exceptions.ConfigurationErrorException("Datasources' directory have to be provided in the configuration file (config / datasourcesDir) : " + file);   
     }
 
-    if (config.config.requestsDir == null) {
-        throw new Exceptions.ConfigurationErrorException("Requests' directory have to be provided in the configuration file (config / requestsDir) : " + file);   
+    if (config.config.storedQuerysDir == null) {
+        throw new Exceptions.ConfigurationErrorException("Stored Query' directory have to be provided in the configuration file (config / storedQuerysDir) : " + file);   
     }
 
     if (config.service.maxFeatureCount == null) {
@@ -48,8 +48,8 @@ function load (file) {
         console.log(DatasourceService.getNumber() + " datasource(s) loaded");
         LayerService.load(config.config.layersDir, config.service.maxFeatureCount);
         console.log(LayerService.getNumber() + " layer(s) loaded");
-        RequestService.load(config.config.requestsDir);
-        console.log(RequestService.getNumber() + " request(s) loaded");
+        StoredQueryService.load(config.config.storedQuerysDir);
+        console.log(StoredQueryService.getNumber() + " stored querie(s) loaded");
     }
     catch (e) {
         throw e;

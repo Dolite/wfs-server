@@ -3,7 +3,7 @@ var router = express.Router();
 
 var LayerService = require('../services/layer');
 var DatasourceService = require('../services/datasource');
-var RequestService = require('../services/request');
+var StoredQueryService = require('../services/storedQuery');
 
 router.route('/reload')
     .put(function(req, res) {
@@ -11,13 +11,13 @@ router.route('/reload')
         try {
             DatasourceService.load();
             LayerService.load();
-            RequestService.load();
+            StoredQueryService.load();
 
             res.status(200).json({
                 "message" : "Reload OK",
                 "datasources" : DatasourceService.getNumber(),
                 "layers" : LayerService.getNumber(),
-                "requests" : RequestService.getNumber()
+                "requests" : StoredQueryService.getNumber()
             });
         }
         catch (e) {
@@ -49,7 +49,7 @@ router.route('/layer/:name')
         LayerService.delete(req, res);
     });
 
-/* datasource */
+/* DATASOURCE */
 router.route('/datasource')
     .get(function(req, res) {
         console.log("Getting all datasources");
@@ -73,28 +73,28 @@ router.route('/datasource/:name')
         DatasourceService.delete(req, res);
     });
 
-/* REQUEST */
-router.route('/request')
+/* QUERY */
+router.route('/query')
     .get(function(req, res) {
-        console.log("Getting all requests");
-        RequestService.getAll(req, res);
+        console.log("Getting all stored requests");
+        StoredQueryService.getAll(req, res);
     })
     .post(function(req, res) {
-        console.log("Create new request");
-        RequestService.create(req, res);
+        console.log("Create new stored query");
+        StoredQueryService.create(req, res);
     });
-router.route('/request/:name')
+router.route('/query/:name')
     .get(function(req, res) {
-        console.log("Get request " + req.params.name);
-        RequestService.getOne(req, res);
+        console.log("Get stored query " + req.params.name);
+        StoredQueryService.getOne(req, res);
     })
     .put(function(req, res) {
-        console.log("Update request " + req.params.name);
-        RequestService.update(req, res);
+        console.log("Update stored query " + req.params.name);
+        StoredQueryService.update(req, res);
     })
     .delete(function(req, res) {
-        console.log("Delete request " + req.params.name);
-        RequestService.delete(req, res);
+        console.log("Delete stored query " + req.params.name);
+        StoredQueryService.delete(req, res);
     });
 
 module.exports = router;

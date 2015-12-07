@@ -3,7 +3,7 @@
         "port":1234
     },
     "config":{
-        "requestsDir":"./config/requests",
+        "storedQuerysDir":"./config/queries",
         "layersDir":"./config/layers",
         "datasourcesDir":"./config/datasources"
     },
