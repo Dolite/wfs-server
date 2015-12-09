@@ -20,18 +20,18 @@ module.exports.Model = StoredQuery;
 
 function isValidStoredQuery (obj) {
     if (obj.name == null) {
-        return false;
+        return "'name' is missing";
     }
     if (obj.request == null) {
-        return false;
+        return "'request' is missing";
     }
-    return true;
+    return null;
 }
 
 module.exports.isValid = isValidStoredQuery;
 
 function createStoredQuery(obj, save) {
-    if (isValidStoredQuery(obj)) {
+    if (isValidStoredQuery(obj) == null) {
 
         if (getStoredQuery(obj.name) != null) {
             throw new Exceptions.ConflictException("Provided storedQuery owns a name already used");
@@ -52,7 +52,7 @@ function createStoredQuery(obj, save) {
 
         return squery;
     } else {
-        throw new Exceptions.BadRequestException("Provided object cannot be cast as a storedQuery");
+        throw new Exceptions.BadRequestException("Provided object cannot be cast as a storedQuery : " + isValidStoredQuery(obj));
     }    
 }
 
@@ -80,7 +80,7 @@ function updateStoredQuery (name, obj) {
         throw new NotFoundException("StoredQuery to update does not exist : " + name);
     }
 
-    if (isValidStoredQuery(obj)) {
+    if (isValidStoredQuery(obj) == null) {
 
         var squery = new StoredQuery(obj.name, obj.storedQuery);
         loadedStoredQuerys[squery.name] = squery;
@@ -95,7 +95,7 @@ function updateStoredQuery (name, obj) {
 
         return squery;
     } else {
-        throw new Exceptions.BadRequestException("Provided object cannot be cast as a storedQuery");
+        throw new Exceptions.BadRequestException("Provided object cannot be cast as a storedQuery : " + isValidStoredQuery(obj));
     } 
 }
 
@@ -143,6 +143,7 @@ function loadStoredQuerys(dir) {
             var squery = JSON.parse(fs.readFileSync(file, 'utf8'));
             createStoredQuery(squery, false);
         } catch (e) {
+            console.log(e.message);
             console.log("StoredQuery file is not a valid JSON file : " + file);
             continue;
         }

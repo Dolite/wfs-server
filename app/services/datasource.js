@@ -9,7 +9,7 @@ module.exports.create = function (req, res) {
     catch (e) {
         if (e instanceof Exceptions.NotFoundException) {
             res.status(404).json(e);
-        } else if (e instanceof Exceptions.BadDatasourceException) {
+        } else if (e instanceof Exceptions.BadRequestException) {
             res.status(400).json(e);
         } else if (e instanceof Exceptions.ConflictException) {
             res.status(409).json(e);
@@ -54,7 +54,7 @@ module.exports.update = function (req, res) {
     catch (e) {
         if (e instanceof Exceptions.NotFoundException) {
             res.status(404).json(e);
-        } else if (e instanceof Exceptions.BadDatasourceException) {
+        } else if (e instanceof Exceptions.BadRequestException) {
             res.status(400).json(e);
         } else {
             res.status(500).json(e);

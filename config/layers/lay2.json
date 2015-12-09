@@ -1,6 +1,6 @@
 {
     "name":"lay2",
     "source":"db1",
-    "tables":["toto","titi"],
+    "tables":["departements","regions"],
     "maxFeatureCount":13
 }

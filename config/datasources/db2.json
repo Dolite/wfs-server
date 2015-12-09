@@ -1,4 +1,12 @@
 {
     "name":"db2",
-    "type":"postgresql"
+    "connector":{
+    	"type":"postgresql",
+    	"dbname":"test",
+    	"host":"localhost",
+    	"port":"5432",
+    	"user":"toto",
+    	"passwd":"mdp",
+    	"schemaname":"public"
+    }
 }

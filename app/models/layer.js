@@ -9,10 +9,10 @@ var defaultMaxFeatureCount;
 /************************ Modèle ***********************/
 /*******************************************************/
 
-function Layer (name, source, tables, max) {
+function Layer (name, sourceName, tables, max) {
     this.name = name;
     
-    this.source = source;
+    this.source = Database.getOne(sourceName);
 
     if (max == null) max = defaultMaxFeatureCount;
     this.maxFeatureCount = max;
@@ -20,32 +20,70 @@ function Layer (name, source, tables, max) {
     this.tables = Array.from(tables);
 }
 
-module.exports.Layer = Layer;
+
+Layer.prototype.getFeature = function(requestedTable, max, properties, objId, sort, bbox, srs, callback) {
+    if (this.tables.indexOf(requestedTable) == -1) {
+        throw new Exceptions.BadRequestException("Requested feature type '"+requestedTable+"' does not exist for the layer '" + this.name + "'");
+    }
+
+    if (! this.source.ownTable(requestedTable)) {
+        throw new Exceptions.BadRequestException("Requested feature type '"+requestedTable+"' does not exist for the datasource '" + this.source.name + "'");
+    }
+
+    /* On determine le maxFeatureCount : celui par défaut ou celui dans la requête */
+    if (max == null || isNaN(new Number(max))) {
+        max = this.maxFeatureCount;
+    }
+
+    if (objId != null) {
+        console.log("getFeatureById");
+        this.source.getFeatureById(requestedTable, properties, objId, callback);  
+    }
+    else if (bbox != null && srs != null) {
+        console.log("getFeatureByBbox");
+        this.source.getFeatureByBbox(requestedTable, max, properties, sort, bbox, srs, callback);
+    }
+    else {
+        console.log("getFeature");
+        this.source.getFeature(requestedTable, max, properties, sort, callback);
+    }    
+};
+
+//module.exports.Layer = Layer;
 
 /*******************************************************/
 /********************* Méthodes CRUD *******************/
 /*******************************************************/
 
 function isValidLayer (obj) {
+
     if (obj.name == null) {
-        return false;
+        return "'name' is missing";
     }
     if (obj.source == null) {
-        return false;
-    }
-    if (obj.tables == null || ! Array.isArray(obj.tables) || obj.tables.length == 0) {
-        return false;
+        return "'source' is missing";
     }
     if (Database.getOne(obj.source) == null) {
-        return false;
+        return "'source' is not an existing datasource name : "+obj.source;
     }
-    return true;
+    if (obj.tables == null || ! Array.isArray(obj.tables) || obj.tables.length == 0) {
+        return "'tables' is missing or is not a not empty array";
+    }
+    for (var i=0; i<obj.tables.length; i++) {
+        if (! Database.getOne(obj.source).ownTable(obj.tables[i])) {
+            return "Table '"+obj.tables[i]+"' is not available in the datasource "+obj.source;
+        }
+    } 
+    
+
+    return null;
 }
+
 
 module.exports.isValid = isValidLayer;
 
 function createLayer(obj, save) {
-    if (isValidLayer(obj)) {
+    if (isValidLayer(obj) == null) {
 
         if (getLayer(obj.name) != null) {
             throw new Exceptions.ConflictException("Provided layer owns a name already used");
@@ -66,7 +104,7 @@ function createLayer(obj, save) {
 
         return lay;
     } else {
-        throw new Exceptions.BadRequestException("Provided object cannot be cast as a layer");
+        throw new Exceptions.BadRequestException("Provided object cannot be cast as a layer : " + isValidLayer(obj));
     }    
 }
 
@@ -94,7 +132,7 @@ function updateLayer (name, obj) {
         throw new NotFoundException("Layer to update does not exist : " + name);
     }
 
-    if (isValidLayer(obj)) {
+    if (isValidLayer(obj) == null) {
 
         var lay = new Layer(obj.name, obj.source, obj.tables, obj.maxFeatureCount);
         loadedLayers[lay.name] = lay;
@@ -109,7 +147,7 @@ function updateLayer (name, obj) {
 
         return lay;
     } else {
-        throw new Exceptions.BadRequestException("Provided object cannot be cast as a layer");
+        throw new Exceptions.BadRequestException("Provided object cannot be cast as a layer : " + isValidLayer(obj));
     } 
 }
 
@@ -158,6 +196,7 @@ function loadLayers(dir, max) {
             var lay = JSON.parse(fs.readFileSync(file, 'utf8'));
             createLayer(lay, false);
         } catch (e) {
+            console.log(e.message);
             console.log("Layer file is not a valid JSON file : " + file);
             continue;
         }

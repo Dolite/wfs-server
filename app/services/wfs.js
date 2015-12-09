@@ -38,6 +38,7 @@ module.exports.getFeature = function (req, res) {
         bbox=a1,b1,a2,b2
     */
 
+    /* On identifie couche et table reqêtées */
     if (req.query.typenames == null) {
         res.status(400).json(new Exceptions.BadRequestException("For a GetFeature request, TYPENAMES field have to be present"));
     }
@@ -52,9 +53,27 @@ module.exports.getFeature = function (req, res) {
         res.status(400).json(new Exceptions.BadRequestException("Requested layer "+tn[0]+" does not exist"));
     }
 
-    if (requestedLayer.tables.indexOf(tn[1]) == -1) {
-        res.status(400).json(new Exceptions.BadRequestException("Requested feature type "+tn[1]+" does not exist for the layer " + tn[0]));
+    try {
+        requestedLayer.getFeature(
+            tn[1], req.query.count, req.query.propertyname, req.query.featureid, req.query.sortby, req.query.bbox, req.query.srsname,
+            function (err, results) {
+                if (err) {
+                    res.status(400).json(err);
+                } else {
+                    res.status(200).json(results);
+                }
+            }
+        );
     }
-
-    res.status(200).json(req.query);
+    catch (e) {
+        if (e instanceof Exceptions.NotFoundException) {
+            res.status(404).json(e);
+        } else if (e instanceof Exceptions.BadRequestException) {
+            res.status(400).json(e);
+        } else if (e instanceof Exceptions.ConflictException) {
+            res.status(409).json(e);
+        }  else {
+            res.status(500).json(e);
+        }
+    }
 }

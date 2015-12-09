@@ -9,6 +9,7 @@
     "minimist": "^1.2.0",
     "nodemon": "^1.8.1",
     "pg": "^4.4.3",
+    "pg-native": "^1.9.0",
     "pg-query": "^0.11.0"
   },
   "scripts": {
@@ -16,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Dolite/wfs-server.git"
+    "url": "https://github.com/Dolite/wfs-server.git"
   },
   "keywords": [
     "WFS"

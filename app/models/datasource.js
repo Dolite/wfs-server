@@ -1,5 +1,6 @@
 var fs = require('fs');
 var Exceptions = require('./exceptions');
+var PostgresService = require('../services/postgresql')
 
 var storePath;
 
@@ -7,10 +8,90 @@ var storePath;
 /************************ Modèle ***********************/
 /*******************************************************/
 
-function Datasource (name, type) {
+function Datasource (name, connector) {
     this.name = name;
-    this.type = type;
+    this.connector = connector;
+    this.tables = {};
+
+    if (this.connector.type == "postgresql" && this.connector.schemaname == null) {
+        this.connector.schemaname = 'public';
+    }
 }
+
+
+Datasource.prototype.ownTable = function(testTable) {
+    return this.tables.hasOwnProperty(testTable);
+};
+
+Datasource.prototype.getFeature = function(requestedTable, max, properties, sort, callback) {
+    if (this.connector.type == "postgresql") {
+        requestedTable = this.connector.schemaname+"."+requestedTable;
+        PostgresService.select(
+            this.connector.connstring,
+            requestedTable, max, properties, sort,
+            callback
+        );
+    }
+};
+
+Datasource.prototype.getFeatureById = function(requestedTable, properties, objId, callback) {
+    if (this.connector.type == "postgresql") {
+        requestedTable = this.connector.schemaname+"."+requestedTable;
+        PostgresService.selectById(
+            this.connector.connstring,
+            requestedTable, properties, objId,
+            callback
+        );
+    }
+};
+
+Datasource.prototype.getFeatureByBbox = function(requestedTable, max, properties, sort, bbox, srs, callback) {
+
+    if (this.tables[requestedTable] == null) {
+        // La table n'a pas de géométrie, on part donc sur une requête simple
+        this.getFeature(connstring, requestedTable, max, properties, sort, callback);
+        return;
+    }
+
+    var geomColumnName = this.tables[requestedTable][0];
+    var nativeSrid = this.tables[requestedTable][1];
+
+    if (this.connector.type == "postgresql") {
+
+        requestedTable = this.connector.schemaname+"."+requestedTable;
+        PostgresService.selectByBbox(
+            this.connector.connstring,
+            requestedTable, max, properties, sort, bbox, srs, geomColumnName, nativeSrid, 
+            callback
+        );
+    }
+};
+
+Datasource.prototype.findInfos = function() {
+    if (this.connector.type == "postgresql") {
+        try {
+            var infos = PostgresService.connInfos(
+                this.connector.host,
+                this.connector.port,
+                this.connector.dbname,
+                this.connector.user,
+                this.connector.passwd,
+                this.connector.schemaname
+            );
+
+            this.connector.connstring = infos[0];
+            this.tables = infos[1];
+            this.geoms = infos[2];
+
+            return true;
+        }
+        catch (e) {
+            console.log(e.message);
+            return false;
+        }
+    }
+    return false;
+};
 
 module.exports.Model = Datasource;
 
@@ -20,24 +101,51 @@ module.exports.Model = Datasource;
 
 function isValidDatasource (obj) {
     if (obj.name == null) {
-        return false;
+        return "'name' is missing";
     }
-    if (obj.type == null) {
-        return false;
+    if (obj.connector == null) {
+        return "'connector' is missing";
     }
-    return true;
+    if (obj.connector.type == null) {
+        return "'connector.type' is missing";
+    }
+
+    if (obj.connector.type == "postgresql") {
+        /* Base postgresql : il faut avoir
+            - l'hôte
+            - le port
+            - le nom de la base de données
+            - le user
+            - le mot de passe
+            - le nom de schéma
+        */
+        if (obj.connector.host == null) {return "Connector 'postgresql' : connector.host' is missing";}
+        if (obj.connector.port == null) {return "Connector 'postgresql' : 'connector.port' is missing";}
+        if (obj.connector.dbname == null) {return "Connector 'postgresql' : 'connector.dbname' is missing";}
+        if (obj.connector.user == null) {return "Connector 'postgresql' : 'connector.user' is missing";}
+        if (obj.connector.passwd == null) {return "Connector 'postgresql' : 'connector.passwd' is missing";}
+    } else {
+        return "connector.type unknown : "+obj.connector.type;
+    }
+
+    return null;
 }
 
 module.exports.isValid = isValidDatasource;
 
 function createDatasource(obj, save) {
-    if (isValidDatasource(obj)) {
+    if (isValidDatasource(obj) == null) {
 
         if (getDatasource(obj.name) != null) {
             throw new Exceptions.ConflictException("Provided datasource owns a name already used");
         }
 
-        var ds = new Datasource(obj.name, obj.type);
+        var ds = new Datasource(obj.name, obj.connector);
+
+        if (! ds.findInfos()) {
+            throw new Exceptions.BadRequestException("Provided connector is unusable");
+        }
+
         loadedDatasources[ds.name] = ds;
 
         if (save != null && save) {
@@ -46,13 +154,14 @@ function createDatasource(obj, save) {
             try {
                 fs.writeFileSync(file, jsonDb);            
             } catch (e) {
+                console.log(e);
                 throw new Exceptions.ConfigurationErrorException("Impossible to write the datasource file : " + file);
             }
         }
 
         return ds;
     } else {
-        throw new Exceptions.BadRequestException("Provided object cannot be cast as a datasource");
+        throw new Exceptions.BadRequestException("Provided object cannot be cast as a datasource : "+isValidDatasource(obj));
     }    
 }
 
@@ -79,24 +188,8 @@ function updateDatasource (name, obj) {
     if (getDatasource(name) == null) {
         throw new NotFoundException("Datasource to update does not exist : " + name);
     }
-
-    if (isValidDatasource(obj)) {
-
-        var ds = new Datasource(obj.name, obj.type);
-        loadedDatasources[ds.name] = ds;
-
-        var jsonDb = JSON.stringify(ds);
-        var file = storePath + "/" + ds.name + ".json";
-        try {
-            fs.writeFileSync(file, jsonDb);            
-        } catch (e) {
-            throw new Exceptions.ConfigurationErrorException("Impossible to write the datasource file : " + file);
-        }
-
-        return ds;
-    } else {
-        throw new Exceptions.BadRequestException("Provided object cannot be cast as a datasource");
-    } 
+    delete loadedDatasources[name];
+    createDatasource(obj, true);
 }
 
 module.exports.update = updateDatasource;
@@ -143,6 +236,7 @@ function loadDatasources(dir) {
             var ds = JSON.parse(fs.readFileSync(file, 'utf8'));
             createDatasource(ds, false);
         } catch (e) {
+            console.log(e.message);
             console.log("Datasource file is not a valid JSON file : " + file);
             continue;
         }
