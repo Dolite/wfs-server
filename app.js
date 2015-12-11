@@ -9,7 +9,7 @@ var parseArgs = require('minimist');
 var args = parseArgs(process.argv.slice(2),{
     string: 'file',
     alias: { f: 'file' },
-    default: { file: './server.json' },
+    default: { file: './config/local/server.json' },
     stopEarly: true, /* populate _ with first non-option */
     unknown: function (arg) {
         console.log("ERROR : unknown argument : "+arg);

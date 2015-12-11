@@ -6,7 +6,7 @@ var fs = require('fs');
 
 function load (file) {
 
-    file = process.cwd()+"/"+file
+    file = process.cwd()+"/"+file;
 
     try {
         fs.statSync(file);
@@ -16,29 +16,30 @@ function load (file) {
 
     console.log("Loading server configuration from file " + file);
 
+    var config;
     try{
-        var config = JSON.parse(fs.readFileSync(file, 'utf8'));
+        config = JSON.parse(fs.readFileSync(file, 'utf8'));
     } catch (e) {
         throw new Exceptions.ConfigurationErrorException("Configuration file is not a valid JSON file : " + file);
     }
 
-    if (config.server.port == null || isNaN(new Number(config.server.port))) {
+    if (config.server.port === null || isNaN(parseFloat(config.server.port)) || ! isFinite(config.server.port)) {
         throw new Exceptions.ConfigurationErrorException("Port have to be provided in the configuration file (server / port) and have to be an integer : " + file);
     }
 
-    if (config.config.layersDir == null) {
+    if (config.config.layersDir === null) {
         throw new Exceptions.ConfigurationErrorException("Layers' directory have to be provided in the configuration file (config / layersDir) : " + file);
     }
 
-    if (config.config.datasourcesDir == null) {
+    if (config.config.datasourcesDir === null) {
         throw new Exceptions.ConfigurationErrorException("Datasources' directory have to be provided in the configuration file (config / datasourcesDir) : " + file);   
     }
 
-    if (config.config.storedQuerysDir == null) {
+    if (config.config.storedQuerysDir === null) {
         throw new Exceptions.ConfigurationErrorException("Stored Query' directory have to be provided in the configuration file (config / storedQuerysDir) : " + file);   
     }
 
-    if (config.service.maxFeatureCount == null) {
+    if (config.service.maxFeatureCount === null) {
         console.log("No default maxFeatureCount defined in 'service' section : it will be 500");
         config.service.maxFeatureCount = 500;   
     }

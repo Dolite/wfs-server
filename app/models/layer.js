@@ -1,6 +1,6 @@
 var fs = require('fs');
 var Exceptions = require('./exceptions');
-var Database = require('./datasource')
+var Database = require('./datasource');
 
 var storePath;
 var defaultMaxFeatureCount;
@@ -14,7 +14,7 @@ function Layer (name, sourceName, tables, max) {
     
     this.source = Database.getOne(sourceName);
 
-    if (max == null) max = defaultMaxFeatureCount;
+    if (max === null) max = defaultMaxFeatureCount;
     this.maxFeatureCount = max;
 
     this.tables = Array.from(tables);
@@ -31,15 +31,15 @@ Layer.prototype.getFeature = function(requestedTable, max, properties, objId, so
     }
 
     /* On determine le maxFeatureCount : celui par défaut ou celui dans la requête */
-    if (max == null || isNaN(new Number(max))) {
+    if (max === null || (! isNaN(parseFloat(max)) && isFinite(max))) {
         max = this.maxFeatureCount;
     }
 
-    if (objId != null) {
+    if (objId !== null) {
         console.log("getFeatureById");
         this.source.getFeatureById(requestedTable, properties, objId, callback);  
     }
-    else if (bbox != null && srs != null) {
+    else if (bbox !== null && srs !== null) {
         console.log("getFeatureByBbox");
         this.source.getFeatureByBbox(requestedTable, max, properties, sort, bbox, srs, callback);
     }
@@ -57,16 +57,16 @@ Layer.prototype.getFeature = function(requestedTable, max, properties, objId, so
 
 function isValidLayer (obj) {
 
-    if (obj.name == null) {
+    if (obj.name === null) {
         return "'name' is missing";
     }
-    if (obj.source == null) {
+    if (obj.source === null) {
         return "'source' is missing";
     }
-    if (Database.getOne(obj.source) == null) {
+    if (Database.getOne(obj.source) === null) {
         return "'source' is not an existing datasource name : "+obj.source;
     }
-    if (obj.tables == null || ! Array.isArray(obj.tables) || obj.tables.length == 0) {
+    if (obj.tables === null || ! Array.isArray(obj.tables) || obj.tables.length === 0) {
         return "'tables' is missing or is not a not empty array";
     }
     for (var i=0; i<obj.tables.length; i++) {
@@ -83,16 +83,16 @@ function isValidLayer (obj) {
 module.exports.isValid = isValidLayer;
 
 function createLayer(obj, save) {
-    if (isValidLayer(obj) == null) {
+    if (isValidLayer(obj) === null) {
 
-        if (getLayer(obj.name) != null) {
+        if (getLayer(obj.name) !== null) {
             throw new Exceptions.ConflictException("Provided layer owns a name already used");
         }
 
         var lay = new Layer(obj.name, obj.source, obj.tables, obj.maxFeatureCount);
         loadedLayers[lay.name] = lay;
 
-        if (save != null && save) {
+        if (save !== null && save) {
             var jsonLay = JSON.stringify(lay);
             var file = storePath + "/" + lay.name + ".json";
             try {
@@ -111,7 +111,7 @@ function createLayer(obj, save) {
 module.exports.create = createLayer;
 
 function deleteLayer (name) {
-    if (getLayer(name) == null) {
+    if (getLayer(name) === null) {
         throw new Exceptions.NotFoundException("Layer to delete does not exist : " + name);
     }
     loadedLayers[name] = null;
@@ -128,11 +128,11 @@ module.exports.delete = deleteLayer;
 
 function updateLayer (name, obj) {
     obj.name = name;
-    if (getLayer(name) == null) {
+    if (getLayer(name) === null) {
         throw new NotFoundException("Layer to update does not exist : " + name);
     }
 
-    if (isValidLayer(obj) == null) {
+    if (isValidLayer(obj) === null) {
 
         var lay = new Layer(obj.name, obj.source, obj.tables, obj.maxFeatureCount);
         loadedLayers[lay.name] = lay;
@@ -175,19 +175,20 @@ module.exports.getOne = getLayer;
 /*******************************************************/
 
 function loadLayers(dir, max) {
-    if (dir != null) storePath = dir;
-    if (max != null) defaultMaxFeatureCount = max;
+    if (dir !== null) storePath = dir;
+    if (max !== null) defaultMaxFeatureCount = max;
 
     console.log("Browse layers' directory "+storePath);
 
+    var files;
     try {
-        var files = fs.readdirSync(storePath);
+        files = fs.readdirSync(storePath);
     }
     catch (e) {
         throw new Exceptions.ConfigurationErrorException("Unable to browse layers' directory "+storePath);
     }
 
-    loadedLayers = null
+    loadedLayers = null;
     loadedLayers = {};
 
     for (var i=0; i<files.length; i++) {

@@ -17,20 +17,20 @@ module.exports.create = function (req, res) {
             res.status(500).json(e);
         }
     }
-}
+};
 
 module.exports.getAll = function (req, res) {
     res.status(200).json(Datasource.getAll());
-}
+};
 
 module.exports.getOne = function (req, res) {
     var obj = Datasource.getOne(req.params.name);
-    if (obj == null) {
+    if (obj === null) {
         res.status(404).json(new Exceptions.NotFoundException("Datasource to get does not exist : " + name));
     } else {
         res.status(200).json(obj);
     }
-}
+};
 
 module.exports.delete = function (req, res) {
     try {
@@ -44,7 +44,7 @@ module.exports.delete = function (req, res) {
             res.status(500).json(e);
         }
     }
-}
+};
 
 module.exports.update = function (req, res) {
     try {
@@ -60,12 +60,12 @@ module.exports.update = function (req, res) {
             res.status(500).json(e);
         }
     }
-}
+};
 
 module.exports.getNumber = function () {
     return Object.keys(Datasource.getAll()).length;
-}
+};
 
 module.exports.load = function (dir) {
     Datasource.load(dir);
-}
+};

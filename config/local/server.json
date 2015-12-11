@@ -1,0 +1,13 @@
+{
+    "server":{
+        "port":1234
+    },
+    "config":{
+        "storedQuerysDir":"./config/local/queries",
+        "layersDir":"./config/local/layers",
+        "datasourcesDir":"./config/local/datasources"
+    },
+    "service":{
+    	"maxFeatureCount":1000
+    }
+}

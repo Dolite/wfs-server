@@ -1,7 +1,7 @@
 var Exceptions = require('../models/exceptions');
 var PG = require('pg');
 var PGquery = require('pg-query');
-var PGnative = require('pg-native')
+var PGnative = require('pg-native');
 
 /*******************************************************/
 /************************* UTILS ***********************/
@@ -24,7 +24,7 @@ module.exports.connInfos = function (host, port, dbname, user, passwd, schemanam
             geoms[rawgeoms[i].name] = [rawgeoms[i].geom, rawgeoms[i].srid];
         }
 
-        for (var i=0; i<rawtables.length; i++) {
+        for (i=0; i<rawtables.length; i++) {
             if (geoms.hasOwnProperty(rawtables[i].name)) {
                 tables[rawtables[i].name] = geoms[rawtables[i].name];
             } else {
@@ -38,14 +38,14 @@ module.exports.connInfos = function (host, port, dbname, user, passwd, schemanam
     catch (e) {
         throw new Exceptions.PostgresqlErrorException('Could not connect to postgresql : ' + e.message);
     }
-}
+};
 
 // Convertisseur du paramètre sort
 
 function translateSort (sortParam) {
     //sortBy=attribute(+A|+D)
     // le plus est tranformé en espace
-    if (sortParam == null) return "";
+    if (sortParam === null) return "";
     var s = sortParam.split(' ');
 
     var order = "ASC";
@@ -59,13 +59,13 @@ function translateSort (sortParam) {
 function translateBbox (srsParam, bboxParam, geomColumn, sridGeom) {
 
     // Si il  manque une information sur les géométries on ne retourne pas de filtre géométrique
-    if (geomColumn == null || sridGeom == null) return "";
+    if (geomColumn === null || sridGeom === null) return "";
 
-    if (srsParam == null) return "";
+    if (srsParam === null) return "";
     var srs = srsParam.split(':');
     if (srs.length != 2 || srs[0].toLowerCase() != "epsg") throw new Exceptions.BadRequestException("SRSNAME field not valid (EPSG:SRID format expected) : "+srsParam);
 
-    if (bboxParam == null) return "";
+    if (bboxParam === null) return "";
     var bb = bboxParam.split(',');
     if (bb.length != 4) throw new Exceptions.BadRequestException("BBOX field not valid (4 values separated by comma expected) : "+bboxParam);
     var polygon = "POLYGON(("+bb[0]+" "+bb[1]+","+bb[2]+" "+bb[1]+","+bb[2]+" "+bb[3]+","+bb[0]+" "+bb[3]+","+bb[0]+" "+bb[1]+"))";
@@ -81,7 +81,7 @@ function translateBbox (srsParam, bboxParam, geomColumn, sridGeom) {
 
 function select (connstring, requestedTable, max, properties, sort, callback) {
 
-    if (properties == null) properties = "*";
+    if (properties === null) properties = "*";
     var sqlRequest = "SELECT "+properties+" FROM "+requestedTable+" "+translateSort(sort)+" LIMIT "+max+";";
 
     PGquery.connectionParameters = connstring;
@@ -97,7 +97,7 @@ function select (connstring, requestedTable, max, properties, sort, callback) {
 module.exports.select = select;
 
 module.exports.selectById = function(connstring, requestedTable, properties, objId, callback) {
-    if (properties == null) properties = "*";
+    if (properties === null) properties = "*";
     var sqlRequest = "SELECT "+properties+" FROM "+requestedTable+" WHERE gid = "+objId+";";
 
     PGquery.connectionParameters = connstring;
@@ -112,7 +112,7 @@ module.exports.selectById = function(connstring, requestedTable, properties, obj
 
 module.exports.selectByBbox = function(connstring, requestedTable, max, properties, sort, bbox, srs, geomColumnName, nativeSrid, callback) {
     
-    if (properties == null) properties = "*";
+    if (properties === null) properties = "*";
     var sqlRequest = "SELECT "+properties+" FROM "+requestedTable+" "+translateBbox(srs, bbox, geomColumnName, nativeSrid)+" "+translateSort(sort)+" LIMIT "+max+";";
 
     console.log(sqlRequest + " on " + connstring);

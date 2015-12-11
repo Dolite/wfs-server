@@ -13,7 +13,7 @@ module.exports.getCapabilities = function (req, res) {
     }
     gc.layers = layersGC;
     res.status(200).json(gc);
-}
+};
 
 module.exports.getFeature = function (req, res) {
     /*      On sait qu'on a
@@ -39,17 +39,17 @@ module.exports.getFeature = function (req, res) {
     */
 
     /* On identifie couche et table reqêtées */
-    if (req.query.typenames == null) {
+    if (req.query.typenames === null) {
         res.status(400).json(new Exceptions.BadRequestException("For a GetFeature request, TYPENAMES field have to be present"));
     }
 
     var tn = req.query.typenames.split(":");
-    if (tn.length != 2 || tn[0] == null || tn[1] == null) {
+    if (tn.length != 2 || tn[0] === null || tn[1] === null) {
         res.status(400).json(new Exceptions.BadRequestException("For a GetFeature request, TYPENAMES value format have to be layer:featureType"));
     }
 
     var requestedLayer = Layer.getOne(tn[0]);
-    if (requestedLayer == null) {
+    if (requestedLayer === null) {
         res.status(400).json(new Exceptions.BadRequestException("Requested layer "+tn[0]+" does not exist"));
     }
 
@@ -76,4 +76,4 @@ module.exports.getFeature = function (req, res) {
             res.status(500).json(e);
         }
     }
-}
+};

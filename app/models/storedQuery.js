@@ -19,10 +19,10 @@ module.exports.Model = StoredQuery;
 /*******************************************************/
 
 function isValidStoredQuery (obj) {
-    if (obj.name == null) {
+    if (obj.name === null) {
         return "'name' is missing";
     }
-    if (obj.request == null) {
+    if (obj.request === null) {
         return "'request' is missing";
     }
     return null;
@@ -31,16 +31,16 @@ function isValidStoredQuery (obj) {
 module.exports.isValid = isValidStoredQuery;
 
 function createStoredQuery(obj, save) {
-    if (isValidStoredQuery(obj) == null) {
+    if (isValidStoredQuery(obj) === null) {
 
-        if (getStoredQuery(obj.name) != null) {
+        if (getStoredQuery(obj.name) !== null) {
             throw new Exceptions.ConflictException("Provided storedQuery owns a name already used");
         }
 
         var squery = new StoredQuery(obj.name, obj.request);
         loadedStoredQuerys[squery.name] = squery;
 
-        if (save != null && save) {
+        if (save !== null && save) {
             var jsonReq = JSON.stringify(squery);
             var file = storePath + "/" + squery.name + ".json";
             try {
@@ -59,7 +59,7 @@ function createStoredQuery(obj, save) {
 module.exports.create = createStoredQuery;
 
 function deleteStoredQuery (name) {
-    if (getStoredQuery(name) == null) {
+    if (getStoredQuery(name) === null) {
         throw new Exceptions.NotFoundException("StoredQuery to delete does not exist : " + name);
     }
     loadedStoredQuerys[name] = null;
@@ -76,11 +76,11 @@ module.exports.delete = deleteStoredQuery;
 
 function updateStoredQuery (name, obj) {
     obj.name = name;
-    if (getStoredQuery(name) == null) {
+    if (getStoredQuery(name) === null) {
         throw new NotFoundException("StoredQuery to update does not exist : " + name);
     }
 
-    if (isValidStoredQuery(obj) == null) {
+    if (isValidStoredQuery(obj) === null) {
 
         var squery = new StoredQuery(obj.name, obj.storedQuery);
         loadedStoredQuerys[squery.name] = squery;
@@ -124,17 +124,18 @@ module.exports.getOne = getStoredQuery;
 /*******************************************************/
 
 function loadStoredQuerys(dir) {
-    if (dir != null) storePath = dir;
+    if (dir !== null) storePath = dir;
     console.log("Browse storedQuerys' directory "+storePath);
 
+    var files;
     try {
-        var files = fs.readdirSync(storePath);
+        files = fs.readdirSync(storePath);
     }
     catch (e) {
         throw new Exceptions.ConfigurationErrorException("Unable to browse storedQuerys' directory "+storePath);
     }
 
-    loadedStoredQuerys = null
+    loadedStoredQuerys = null;
     loadedStoredQuerys = {};
 
     for (var i=0; i<files.length; i++) {

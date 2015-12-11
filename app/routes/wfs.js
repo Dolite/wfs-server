@@ -7,7 +7,7 @@ var WfsService = require('../services/wfs');
 router.route('/')
     .get(function(req, res) {
         // On ne gère que le 2.0.0
-        if (req.query.version == null) {
+        if (req.query.version === null) {
             res.status(400).json(new Exceptions.BadRequestException("VERSION field have to be present"));
         }
         if (req.query.version != "2.0.0") {
@@ -15,7 +15,7 @@ router.route('/')
         }
 
         // Service WFS obligé
-        if (req.query.service == null) {
+        if (req.query.service === null) {
             res.status(400).json(new Exceptions.BadRequestException("SERVICE field have to be present"));
         }
         if (req.query.service.toLowerCase() != "wfs") {
@@ -23,7 +23,7 @@ router.route('/')
         }
 
         // Champ Request
-        if (req.query.request == null) {
+        if (req.query.request === null) {
             res.status(400).json(new Exceptions.BadRequestException("REQUEST field have to be present"));
         }
         else if (req.query.request.toLowerCase() == "getfeature") {

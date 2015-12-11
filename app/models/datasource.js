@@ -1,6 +1,6 @@
 var fs = require('fs');
 var Exceptions = require('./exceptions');
-var PostgresService = require('../services/postgresql')
+var PostgresService = require('../services/postgresql');
 
 var storePath;
 
@@ -13,7 +13,7 @@ function Datasource (name, connector) {
     this.connector = connector;
     this.tables = {};
 
-    if (this.connector.type == "postgresql" && this.connector.schemaname == null) {
+    if (this.connector.type == "postgresql" && this.connector.schemaname === null) {
         this.connector.schemaname = 'public';
     }
 }
@@ -47,7 +47,7 @@ Datasource.prototype.getFeatureById = function(requestedTable, properties, objId
 
 Datasource.prototype.getFeatureByBbox = function(requestedTable, max, properties, sort, bbox, srs, callback) {
 
-    if (this.tables[requestedTable] == null) {
+    if (this.tables[requestedTable] === null) {
         // La table n'a pas de géométrie, on part donc sur une requête simple
         this.getFeature(connstring, requestedTable, max, properties, sort, callback);
         return;
@@ -100,13 +100,13 @@ module.exports.Model = Datasource;
 /*******************************************************/
 
 function isValidDatasource (obj) {
-    if (obj.name == null) {
+    if (obj.name === null) {
         return "'name' is missing";
     }
-    if (obj.connector == null) {
+    if (obj.connector === null) {
         return "'connector' is missing";
     }
-    if (obj.connector.type == null) {
+    if (obj.connector.type === null) {
         return "'connector.type' is missing";
     }
 
@@ -119,11 +119,11 @@ function isValidDatasource (obj) {
             - le mot de passe
             - le nom de schéma
         */
-        if (obj.connector.host == null) {return "Connector 'postgresql' : connector.host' is missing";}
-        if (obj.connector.port == null) {return "Connector 'postgresql' : 'connector.port' is missing";}
-        if (obj.connector.dbname == null) {return "Connector 'postgresql' : 'connector.dbname' is missing";}
-        if (obj.connector.user == null) {return "Connector 'postgresql' : 'connector.user' is missing";}
-        if (obj.connector.passwd == null) {return "Connector 'postgresql' : 'connector.passwd' is missing";}
+        if (obj.connector.host === null) {return "Connector 'postgresql' : connector.host' is missing";}
+        if (obj.connector.port === null) {return "Connector 'postgresql' : 'connector.port' is missing";}
+        if (obj.connector.dbname === null) {return "Connector 'postgresql' : 'connector.dbname' is missing";}
+        if (obj.connector.user === null) {return "Connector 'postgresql' : 'connector.user' is missing";}
+        if (obj.connector.passwd === null) {return "Connector 'postgresql' : 'connector.passwd' is missing";}
     } else {
         return "connector.type unknown : "+obj.connector.type;
     }
@@ -134,9 +134,9 @@ function isValidDatasource (obj) {
 module.exports.isValid = isValidDatasource;
 
 function createDatasource(obj, save) {
-    if (isValidDatasource(obj) == null) {
+    if (isValidDatasource(obj) === null) {
 
-        if (getDatasource(obj.name) != null) {
+        if (getDatasource(obj.name) !== null) {
             throw new Exceptions.ConflictException("Provided datasource owns a name already used");
         }
 
@@ -148,7 +148,7 @@ function createDatasource(obj, save) {
 
         loadedDatasources[ds.name] = ds;
 
-        if (save != null && save) {
+        if (save !== null && save) {
             var jsonDb = JSON.stringify(ds);
             var file = storePath + "/" + ds.name + ".json";
             try {
@@ -168,7 +168,7 @@ function createDatasource(obj, save) {
 module.exports.create = createDatasource;
 
 function deleteDatasource (name) {
-    if (getDatasource(name) == null) {
+    if (getDatasource(name) === null) {
         throw new Exceptions.NotFoundException("Datasource to delete does not exist : " + name);
     }
     loadedDatasources[name] = null;
@@ -185,7 +185,7 @@ module.exports.delete = deleteDatasource;
 
 function updateDatasource (name, obj) {
     obj.name = name;
-    if (getDatasource(name) == null) {
+    if (getDatasource(name) === null) {
         throw new NotFoundException("Datasource to update does not exist : " + name);
     }
     delete loadedDatasources[name];
@@ -217,17 +217,18 @@ module.exports.getOne = getDatasource;
 /*******************************************************/
 
 function loadDatasources(dir) {
-    if (dir != null) storePath = dir;
+    if (dir !== null) storePath = dir;
     console.log("Browse datasources' directory "+storePath);
 
+    var files;
     try {
-        var files = fs.readdirSync(storePath);
+        files = fs.readdirSync(storePath);
     }
     catch (e) {
         throw new Exceptions.ConfigurationErrorException("Unable to browse datasources' directory "+storePath);
     }
 
-    loadedDatasources = null
+    loadedDatasources = null;
     loadedDatasources = {};
 
     for (var i=0; i<files.length; i++) {

@@ -26,7 +26,7 @@ module.exports = function(grunt) {
     env : {
         dev : {
               NODE_ENV : 'development',
-              CONFDIR:'../config/local'
+              CONFDIR:'./config/local'
         }
     }
   });
