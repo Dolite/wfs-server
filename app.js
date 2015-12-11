@@ -46,7 +46,7 @@ app.use('/', routing);
 var clean = function () {
     console.log('Shutdown');
     process.exit(1);
-}
+};
 
 app.on('close',clean);
 process.on('SIGINT', clean);
