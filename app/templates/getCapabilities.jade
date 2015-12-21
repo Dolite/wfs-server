@@ -1,0 +1,80 @@
+doctype xml
+wfs:WFS_Capabilities(xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns="http://www.opengis.net/wfs/2.0" xmlns:ows="http://www.opengis.net/ows/1.1")
+
+   ows:ServiceIdentification
+      ows:Title Mon titre de WFS
+      ows:Abstract
+      ows:Keywords
+         ows:Keyword wfs
+         ows:Keyword opensource
+         ows:Keyword wfs-server.git
+      ows:ServiceType WFS
+      ows:ServiceTypeVersion 2.0.0
+      ows:Fees NONE
+      ows:AccessConstraints NONE
+
+   ows:ServiceProvider
+      ows:ProviderName 
+      ows:ServiceContact
+         ows:IndividualName 
+         ows:PositionName 
+         ows:ContactInfo
+            ows:Phone
+               ows:Voice 
+               ows:Facsimile 
+
+            ows:Address
+               ows:City 
+               ows:AdministrativeArea 
+               ows:PostalCode 
+               ows:Country
+
+   ows:OperationsMetadata
+      ows:Operation(name="GetCapabilities")
+         ows:DCP
+            ows:HTTP
+               ows:Get= url
+
+         ows:Parameter name="AcceptVersions"
+            ows:AllowedValues
+               ows:Value 2.0.0
+
+         ows:Parameter(name="AcceptFormats")
+            ows:AllowedValues
+               ows:Value text/xml
+               ows:Value application/json
+
+      ows:Operation(name="DescribeFeatureType")
+         ows:DCP
+            ows:HTTP
+               ows:Get= url
+
+         ows:Parameter(name="outputFormat")
+            ows:AllowedValues
+               ows:Value text/xml
+               ows:Value application/json
+
+      ows:Operation(name="GetFeature")
+         ows:DCP
+            ows:HTTP
+               ows:Get= url
+
+         ows:Parameter(name="resultType")
+            ows:AllowedValues
+               ows:Value results
+               ows:Value hits
+
+         ows:Parameter(name="outputFormat")
+            ows:AllowedValues
+               ows:Value json
+
+         ows:Constraint(name="CountDefault")
+            ows:DefaultValue= max
+
+   FeatureTypeList
+      FeatureType
+         each val in layers
+            Name= val.name
+            Title= val.title
+            ows:Keywords
+               ows:Keyword= val.name

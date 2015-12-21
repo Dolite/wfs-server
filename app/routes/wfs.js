@@ -11,7 +11,7 @@ router.route('/')
             res.status(400).json(new Exceptions.BadRequestException("VERSION field have to be present"));
         }
         if (req.query.version != "2.0.0") {
-            res.status(400).json(new Exceptions.BadRequestException("Only VERSION 2.0.0 is handled"));
+            res.status(400).json(new Exceptions.BadRequestException("Only VERSION 2.0.0 is supported"));
         }
 
         // Service WFS obligé
@@ -19,7 +19,7 @@ router.route('/')
             res.status(400).json(new Exceptions.BadRequestException("SERVICE field have to be present"));
         }
         if (req.query.service.toLowerCase() != "wfs") {
-            res.status(400).json(new Exceptions.BadRequestException("Only SERVICE WFS is handled"));
+            res.status(400).json(new Exceptions.BadRequestException("Only SERVICE WFS is supported"));
         }
 
         // Champ Request
@@ -28,6 +28,9 @@ router.route('/')
         }
         else if (req.query.request.toLowerCase() == "getfeature") {
             WfsService.getFeature(req, res);
+        }
+        else if (req.query.request.toLowerCase() == "describefeaturetype") {
+            WfsService.DescribeFeatureType(req, res);
         }
         else if (req.query.request.toLowerCase() == "getcapabilities") {
             WfsService.getCapabilities(req, res);

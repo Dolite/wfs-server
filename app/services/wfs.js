@@ -1,23 +1,52 @@
 var Exceptions = require('../models/exceptions');
+var fs = require('fs');
+var jade = require('jade');
 var Layer = require('../models/layer');
+var ConfigurationService = require('./configuration');
+
+// On charge le template Jade pour le GetCapabilities
+var gcTemplate;
+try{
+    var gcTmpl = fs.readFileSync("./app/templates/getCapabilities.jade", 'utf8');
+    gcTemplate = jade.compile(gcTmpl);
+} catch (e) {
+    console.error(e.message);
+    process.exit(1);
+}
 
 module.exports.getCapabilities = function (req, res) {
 
-    var gc = {};
-    gc.version = "2.0.0";
     var layers = Layer.getAll();
-    var layersGC = [];
-    for (var layerName in layers) {
-        layersGC.push({
-            "featureTypes":layers[layerName].featureTypes,
-            "layerName":layerName,
-            "title":layers[layerName].title,
-            "maxFeatureCount":layers[layerName].maxFeatureCount
-        });
+    var featureTypesList = [];
+    for (var l in layers) {
+        for (var i = 0; i < layers[l].featureTypes.length; i++) {
+            var ft = layers[l].featureTypes[i];
+            featureTypesList.push({
+                name:l+":"+ft,
+                title:layers[l].title+": "+ft
+            });
+        }
     }
-    gc.layers = layersGC;
-    res.status(200).json(gc);
+
+    var xmlContent = gcTemplate({
+        layers: featureTypesList,
+        url: "xlink:href='http://localhost:" + ConfigurationService.getPort() + "/wfs'",
+        max: ConfigurationService.getDefaultMax()
+    });
+
+    res.set('Content-Type', 'text/xml; charset=utf-8').status(200).send(xmlContent);
 };
+
+module.exports.DescribeFeatureType = function (req, res) {
+    /*      On sait qu'on a
+
+        http://server.com/wfs?
+        service=wfs&
+        version=2.0.0&
+        request=DescribeFeatureType&
+    */
+};
+
 
 module.exports.getFeature = function (req, res) {
     /*      On sait qu'on a
