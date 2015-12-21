@@ -8,8 +8,12 @@ module.exports.getCapabilities = function (req, res) {
     var layers = Layer.getAll();
     var layersGC = [];
     for (var layerName in layers) {
-        var tables = layers[layerName].tables;
-        layersGC.push({"tables":tables, "layerName":layerName, "title":"Titre de "+layerName, "maxFeatureCount":layers[layerName].maxFeatureCount});
+        layersGC.push({
+            "featureTypes":layers[layerName].featureTypes,
+            "layerName":layerName,
+            "title":layers[layerName].title,
+            "maxFeatureCount":layers[layerName].maxFeatureCount
+        });
     }
     gc.layers = layersGC;
     res.status(200).json(gc);
@@ -38,8 +42,8 @@ module.exports.getFeature = function (req, res) {
         bbox=a1,b1,a2,b2
     */
 
-    /* On identifie couche et table reqêtées */
-    if (req.query.typenames === null) {
+    /* On identifie couche et table requêtées */
+    if (! req.query.hasOwnProperty("typenames") || req.query.typenames === null) {
         res.status(400).json(new Exceptions.BadRequestException("For a GetFeature request, TYPENAMES field have to be present"));
     }
 
@@ -48,7 +52,7 @@ module.exports.getFeature = function (req, res) {
         res.status(400).json(new Exceptions.BadRequestException("For a GetFeature request, TYPENAMES value format have to be layer:featureType"));
     }
 
-    var requestedLayer = Layer.getOne(tn[0]);
+    var requestedLayer = Layer.getObject(tn[0]);
     if (requestedLayer === null) {
         res.status(400).json(new Exceptions.BadRequestException("Requested layer "+tn[0]+" does not exist"));
     }

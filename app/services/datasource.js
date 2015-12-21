@@ -26,7 +26,7 @@ module.exports.getAll = function (req, res) {
 module.exports.getOne = function (req, res) {
     var obj = Datasource.getOne(req.params.name);
     if (obj === null) {
-        res.status(404).json(new Exceptions.NotFoundException("Datasource to get does not exist : " + name));
+        res.status(404).json(new Exceptions.NotFoundException("Datasource to get does not exist : " + req.params.name));
     } else {
         res.status(200).json(obj);
     }

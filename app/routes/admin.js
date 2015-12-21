@@ -9,9 +9,9 @@ router.route('/reload')
     .put(function(req, res) {
         console.log("Reload configuration");
         try {
-            DatasourceService.load();
-            LayerService.load();
-            StoredQueryService.load();
+            DatasourceService.load(null);
+            LayerService.load(null);
+            StoredQueryService.load(null);
 
             res.status(200).json({
                 "message" : "Reload OK",

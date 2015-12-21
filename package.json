@@ -6,12 +6,14 @@
   "dependencies": {
     "body-parser": "^1.14.1",
     "express": "^4.13.3",
+    "libpq": "^1.8.0",
     "minimist": "^1.2.0",
     "nodemon": "^1.8.1",
     "pg": "^4.4.3",
     "pg-native": "^1.9.0",
     "pg-query": "^0.11.0"
-  },"devDependencies": {
+  },
+  "devDependencies": {
     "debug": "~2.1.1",
     "grunt": "~0.4.4",
     "grunt-contrib-clean": "~0.6.0",
