@@ -1,5 +1,5 @@
 doctype xml
-wfs:WFS_Capabilities(xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns="http://www.opengis.net/wfs/2.0" xmlns:ows="http://www.opengis.net/ows/1.1")
+wfs:WFS_Capabilities(version="2.0.0" xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns="http://www.opengis.net/wfs/2.0" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:fes="http://schemas.opengis.net/filter/2.0/filterAll.xsd" xmlns:xlink="http://www.w3.org/1999/xlink")
 
    ows:ServiceIdentification
       ows:Title Mon titre de WFS
@@ -33,7 +33,7 @@ wfs:WFS_Capabilities(xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns="http://ww
       ows:Operation(name="GetCapabilities")
          ows:DCP
             ows:HTTP
-               ows:Get= url
+               ows:Get(xlink:href=''+url+'')
 
          ows:Parameter name="AcceptVersions"
             ows:AllowedValues
@@ -42,22 +42,21 @@ wfs:WFS_Capabilities(xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns="http://ww
          ows:Parameter(name="AcceptFormats")
             ows:AllowedValues
                ows:Value text/xml
-               ows:Value application/json
 
       ows:Operation(name="DescribeFeatureType")
          ows:DCP
             ows:HTTP
-               ows:Get= url
+               ows:Get(xlink:href=''+url+'')
 
          ows:Parameter(name="outputFormat")
             ows:AllowedValues
-               ows:Value text/xml
+               ows:Value json
                ows:Value application/json
 
       ows:Operation(name="GetFeature")
          ows:DCP
             ows:HTTP
-               ows:Get= url
+               ows:Get(xlink:href=''+url+'')
 
          ows:Parameter(name="resultType")
             ows:AllowedValues
@@ -67,6 +66,7 @@ wfs:WFS_Capabilities(xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns="http://ww
          ows:Parameter(name="outputFormat")
             ows:AllowedValues
                ows:Value json
+               ows:Value application/json
 
          ows:Constraint(name="CountDefault")
             ows:DefaultValue= max
@@ -78,3 +78,10 @@ wfs:WFS_Capabilities(xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns="http://ww
             Title= val.title
             ows:Keywords
                ows:Keyword= val.name
+
+            DefaultCRS= val.srs
+            ows:WGS84BoundingBox
+               ows:LowerCorner= val.lowerCorner
+               ows:UpperCorner= val.upperCorner
+
+   fes:Filter_Capabilities

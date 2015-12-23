@@ -68,22 +68,17 @@ Layer.prototype.getFeature = function(requestedFeatureType, max, properties, obj
     }
 
     /* On determine le maxFeatureCount : celui par défaut ou celui dans la requête */
-    if (max === undefined || (! isNaN(parseFloat(max)) && isFinite(max))) {
+    if (max === undefined || ! (! isNaN(parseFloat(max)) && isFinite(max))) {
         max = this.maxFeatureCount;
     }
 
-    console.log([requestedFeatureType, max, properties, objId, sort, bbox, srs]);
-
     if (objId !== undefined) {
-        console.log("getFeatureById");
         this.source.getFeatureById(requestedFeatureType, properties, objId, callback);  
     }
     else if (bbox !== undefined && srs !== undefined) {
-        console.log("getFeatureByBbox");
         this.source.getFeatureByBbox(requestedFeatureType, max, properties, sort, bbox, srs, callback);
     }
     else {
-        console.log("getFeature");
         this.source.getFeature(requestedFeatureType, max, properties, sort, callback);
     }    
 };

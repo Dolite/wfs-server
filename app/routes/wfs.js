@@ -6,11 +6,8 @@ var WfsService = require('../services/wfs');
 
 router.route('/')
     .get(function(req, res) {
-        // On ne gère que le 2.0.0
-        if (req.query.version === null) {
-            res.status(400).json(new Exceptions.BadRequestException("VERSION field have to be present"));
-        }
-        if (req.query.version != "2.0.0") {
+        // On ne gère que le 2.0.0, donc si on précise une version, ce doit être 2.0.0
+        if (req.query.version !== undefined && req.query.version != "2.0.0") {
             res.status(400).json(new Exceptions.BadRequestException("Only VERSION 2.0.0 is supported"));
         }
 

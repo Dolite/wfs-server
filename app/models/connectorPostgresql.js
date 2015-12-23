@@ -7,6 +7,9 @@ var PGnative = require('pg-native');
 /************************ Modèle ***********************/
 /*******************************************************/
 
+// Liste des tables de fonctionnement de PostGIS, pour ne pas les lister comme étant exploitables
+var postgisTables = ['spatial_ref_sys'];
+
 /*
 Exceptions possibles :
 - MissingAttributeException
@@ -57,7 +60,7 @@ function ConnectorPostgresql (params) {
 /*
 Fonction synchrone
 - Teste la connexion
-- Récupère les tables disponibles et leur colonne géométrique
+- Récupère les tables disponibles et leur colonne géométrique (et plus même...)
 
 Exceptions possibles :
 - PostgresqlErrorException
@@ -67,30 +70,92 @@ ConnectorPostgresql.prototype.getFeatureTypes = function () {
         return Object.keys(this.tables);
     }
 
+    this.tables = {};
     try {
         var client = new PGnative();
         client.connectSync(this.conString);
         //text queries
-        var rawgeoms = client.querySync("SELECT f_table_name as name, f_geometry_column as geom, srid FROM geometry_columns WHERE f_table_schema = '"+this.schemaName+"' ;");
-        var rawtables = client.querySync("SELECT tablename as name FROM pg_tables WHERE schemaname = '"+this.schemaName+"' ;");
+        var rawgeoms = client.querySync(
+            "SELECT f_table_name as name, f_geometry_column as geom, srid FROM geometry_columns WHERE f_table_schema = '"+this.schemaName+"' ;"
+        );
+        var rawtables = client.querySync(
+            "SELECT tablename as name FROM pg_tables WHERE schemaname = '"+this.schemaName+"' ;"
+        );
 
-        var tables = {};
         var geoms = {};
+        var srids = {};
         for (var i=0; i<rawgeoms.length; i++) {
-            geoms[rawgeoms[i].name] = [rawgeoms[i].geom, rawgeoms[i].srid];
+            geoms[rawgeoms[i].name] = rawgeoms[i].geom
+            srids[rawgeoms[i].name] = rawgeoms[i].srid;
         }
 
+        /* Pour chaque table, on va : 
+         *    1 - vérifier qu'elle n'est pas une table de fonctionnement de PostGIS
+         *    2 - préciser la colonne géométrique et si présente :
+         *        - son srid
+         *        - son étendue
+         *    3 - récupérer les attributs et leur type
+         */
         for (i=0; i<rawtables.length; i++) {
-            if (geoms.hasOwnProperty(rawtables[i].name)) {
-                tables[rawtables[i].name] = geoms[rawtables[i].name];
-            } else {
-                tables[rawtables[i].name] = null;
+            var tableName = rawtables[i].name;
+
+            // 1
+            if (postgisTables.indexOf(tableName) !== -1) continue;
+
+            var table = {};
+
+            // 2
+            if (geoms.hasOwnProperty(tableName)) {
+                var bboxeSQL = "SELECT "+
+                    "st_xmin(bboxes.native) as xminn, st_xmax(bboxes.native) as xmaxn, st_ymin(bboxes.native) as yminn, st_ymax(bboxes.native) as ymaxn, "+
+                    "st_xmin(bboxes.reproj) as xminw, st_xmax(bboxes.reproj) as xmaxw, st_ymin(bboxes.reproj) as yminw, st_ymax(bboxes.reproj) as ymaxw "+
+                    "FROM "+
+                    "(SELECT "+
+                    "bbox.native as native, st_transform(st_setsrid(st_segmentize(bbox.native, st_perimeter(bbox.native)/100),"+srids[tableName]+"), 4326) as reproj "+
+                    "FROM "+
+                    "(SELECT st_extent("+geoms[tableName]+") AS native "+
+                    "FROM "+this.schemaName+"."+tableName+") AS bbox) AS bboxes;";
+                var bboxes = client.querySync(bboxeSQL)[0];
+                table.geometry = {
+                    "column": geoms[tableName],
+                    "srid": srids[tableName],
+                    "bboxNative": [bboxes.xminn, bboxes.yminn, bboxes.xmaxn, bboxes.ymaxn],
+                    "bboxWgs84g": [bboxes.xminw, bboxes.yminw, bboxes.xmaxw, bboxes.ymaxw]
+                };
             }
+
+            // 3
+            var rawatts = client.querySync(
+                "SELECT column_name as name, data_type as type FROM information_schema.columns WHERE table_schema = '"+this.schemaName+"' and table_name = '"+tableName+"';"
+            );
+
+            var atts = {};
+            for (var j=0; j<rawatts.length; j++) {
+                // On ne liste pas là la colonne géometrique
+                if (rawatts[j].name === table.geometry.column) continue;
+
+                atts[rawatts[j].name] = rawatts[j].type;
+            }
+            table.attributes = atts;
+            // Pour éviter de calculer la chaîne à chaque fois, on stocke une fois pour toute la 
+            // chaîne de caractère correspondant à tous les attributs, plus la géométrie
+            // (dans le cas de getFeature sans champ 'properties')
+
+            var allProperties = [];
+            allProperties.push(Object.keys(atts));
+            if (table.hasOwnProperty("geometry")) {
+                // la propriété géométrique est demandée en GeoJSON
+                allProperties.push("st_asGeoJSON(" + table.geometry.column + ") AS jsongeometry");
+            }
+            table.allAttributes = allProperties.join(",");
+
+            // On stocke ces informations
+            this.tables[tableName] = table
+
         }
 
         client.end();
-        this.tables = tables;
-        return Object.keys(tables);
+        return Object.keys(this.tables);
     }
     catch (e) {
         throw new Exceptions.PostgresqlErrorException('Could not connect to postgresql : ' + e.message);
@@ -110,13 +175,40 @@ ConnectorPostgresql.prototype.getPersistent = function() {
     return obj;
 };
 
+ConnectorPostgresql.prototype.translateProperties = function(tableName, properties) {
+    var finalProperties = [];
+
+    if (properties === undefined) {
+        return this.tables[tableName].allAttributes;
+    }
+
+    var props = properties.split(',');
+    for (var i = 0; i < props.length; i++) {
+        var p = props[i];
+        if (this.tables[tableName].hasOwnProperty("geometry") && p === this.tables[tableName].geometry.column) {
+            // la propriété demandée est la colonne géométrique, on ajoute la conversion en GeoJSON
+            finalProperties.push("st_asGeoJSON(" + p + ") AS jsongeometry");
+        } else if (this.tables[tableName].attributes.hasOwnProperty(p)) {
+            finalProperties.push(p);
+        } else {
+            throw new Exceptions.BadRequestException("Unvalid attribute in PROPERTYNAME field: "+p);
+        }
+    }
+
+    return finalProperties.join(",");
+};
+
+ConnectorPostgresql.prototype.getFeatureTypeInformations = function(tableName) {
+    return this.tables[tableName];
+};
+
 /*******************************************************/
 /************************ SELECTS **********************/
 /*******************************************************/
 
 ConnectorPostgresql.prototype.select = function(requestedTable, max, properties, sort, callback) {
 
-    if (properties === undefined) properties = "*";
+    properties = this.translateProperties(requestedTable, properties);
     var sqlRequest = "SELECT "+properties+" FROM "+requestedTable+" "+translateSort(sort)+" LIMIT "+max+";";
 
     PGquery.connectionParameters = this.conString;
@@ -124,13 +216,13 @@ ConnectorPostgresql.prototype.select = function(requestedTable, max, properties,
     PGquery(
         sqlRequest,
         function(err, rows, result) {
-            callback(err, rows);
+            callback(err, translateFeatures(rows));
         }
     );
 };
 
 ConnectorPostgresql.prototype.selectById = function(requestedTable, properties, objId, callback) {
-    if (properties === undefined) properties = "*";
+    properties = this.translateProperties(requestedTable, properties);
     var sqlRequest = "SELECT "+properties+" FROM "+requestedTable+" WHERE gid = "+objId+";";
 
     PGquery.connectionParameters = this.conString;
@@ -138,34 +230,32 @@ ConnectorPostgresql.prototype.selectById = function(requestedTable, properties, 
     PGquery(
         sqlRequest,
         function(err, rows, result) {
-            callback(err, rows);
+            callback(err, translateFeatures(rows));
         }
     );
 };
 
 ConnectorPostgresql.prototype.selectByBbox = function(requestedTable, max, properties, sort, bbox, srs, callback) {
     
-    if (properties === undefined) properties = "*";
-    if (this.tables[requestedTable] === null) {
+    if (! this.tables[requestedTable].hasOwnProperty("geometry")) {
         // Pas de géométrie dans cette table on ignore la bbox et on part sur un simple select
         console.log("No geometry attribut for this table -> standard select");
         this.select(requestedTable, max, properties, sort, callback);
         return;
     }
 
+    properties = this.translateProperties(requestedTable, properties);
 
-    var geomColumnName = this.tables[requestedTable][0];
-    var nativeSrid = this.tables[requestedTable][1];
+    var geomColumnName = this.tables[requestedTable].geometry.column;
+    var nativeSrid = this.tables[requestedTable].geometry.srid;
     var sqlRequest = "SELECT "+properties+" FROM "+requestedTable+" "+translateBbox(srs, bbox, geomColumnName, nativeSrid)+" "+translateSort(sort)+" LIMIT "+max+";";
-
-    console.log(sqlRequest);
 
     PGquery.connectionParameters = this.conString;
     
     PGquery(
         sqlRequest,
         function(err, rows, result) {
-            callback(err, rows);
+            callback(err, translateFeatures(rows));
         }
     );
 };
@@ -178,8 +268,39 @@ module.exports.Model = ConnectorPostgresql;
 /*******************************************************/
 
 
-// Convertisseur du paramètre sort
+function translateFeatures (rawResults) {
 
+    if (rawResults === null) return null;
+
+    var geoJSON = {
+        "type": "FeatureCollection",
+        "totalFeatures": rawResults.length,
+        "features": []
+    };
+
+
+    for (var i = 0; i < rawResults.length; i++) {
+        var rawFeature = rawResults[i];
+        var feature = {
+            "type": "Feature",
+            "properties": {}
+        };
+
+        for (var att in rawFeature) {
+            if (att === "jsongeometry") {
+                feature.geometry = rawFeature.jsongeometry;
+            } else {
+                feature.properties[att] = rawFeature[att];
+            }
+        }
+
+        geoJSON.features.push(feature);
+    }
+
+    return geoJSON;
+}
+
+// Convertisseur du paramètre sort
 function translateSort (sortParam) {
     //sortBy=attribute(+A|+D)
     // le plus est tranformé en espace

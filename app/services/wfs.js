@@ -19,22 +19,34 @@ module.exports.getCapabilities = function (req, res) {
     var layers = Layer.getAll();
     var featureTypesList = [];
     for (var l in layers) {
-        for (var i = 0; i < layers[l].featureTypes.length; i++) {
-            var ft = layers[l].featureTypes[i];
-            featureTypesList.push({
-                name:l+":"+ft,
-                title:layers[l].title+": "+ft
-            });
+        var lay = Layer.getObject(l);
+        for (var i = 0; i < lay.featureTypes.length; i++) {
+            var ft = lay.featureTypes[i];
+            var infos = lay.source.connector.getFeatureTypeInformations(ft);
+            if (infos === null) continue;
+
+            var ftInfos = {};
+
+            ftInfos.name = l+":"+ft;
+            ftInfos.title = lay.title+": "+ft;
+
+            if (infos.hasOwnProperty("geometry")) {
+                ftInfos.srs = "urn:ogc:def:crs:EPSG::"+infos.geometry.srid;
+                ftInfos.upperCorner = infos.geometry.bboxWgs84g[2]+" "+infos.geometry.bboxWgs84g[3];
+                ftInfos.lowerCorner = infos.geometry.bboxWgs84g[0]+" "+infos.geometry.bboxWgs84g[1];
+            }
+
+            featureTypesList.push(ftInfos);
         }
     }
 
     var xmlContent = gcTemplate({
         layers: featureTypesList,
-        url: "xlink:href='http://localhost:" + ConfigurationService.getPort() + "/wfs'",
+        url: "http://localhost:" + ConfigurationService.getPort() + "/wfs",
         max: ConfigurationService.getDefaultMax()
     });
 
-    res.set('Content-Type', 'text/xml; charset=utf-8').status(200).send(xmlContent);
+    res.set('Content-Type', 'application/xml; charset=utf-8').status(200).send(xmlContent);
 };
 
 module.exports.DescribeFeatureType = function (req, res) {
