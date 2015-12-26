@@ -35,7 +35,7 @@ wfs:WFS_Capabilities(version="2.0.0" xmlns:wfs="http://www.opengis.net/wfs/2.0" 
             ows:HTTP
                ows:Get(xlink:href=''+url+'')
 
-         ows:Parameter name="AcceptVersions"
+         ows:Parameter(name="AcceptVersions")
             ows:AllowedValues
                ows:Value 2.0.0
 
@@ -72,8 +72,8 @@ wfs:WFS_Capabilities(version="2.0.0" xmlns:wfs="http://www.opengis.net/wfs/2.0" 
             ows:DefaultValue= max
 
    FeatureTypeList
-      FeatureType
-         each val in layers
+      each val in layers
+         FeatureType
             Name= val.name
             Title= val.title
             ows:Keywords

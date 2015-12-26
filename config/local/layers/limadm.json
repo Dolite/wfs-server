@@ -2,6 +2,6 @@
     "name":"limadm",
     "title":"Limites administratives",
     "source":"postgres1",
-    "featureTypes":["communes"],
-    "maxFeatureCount":13
+    "featureTypes":["departements", "cantons"],
+    "maxFeatureCount":100
 }

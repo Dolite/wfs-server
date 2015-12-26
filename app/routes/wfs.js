@@ -7,15 +7,12 @@ var WfsService = require('../services/wfs');
 router.route('/')
     .get(function(req, res) {
         // On ne gère que le 2.0.0, donc si on précise une version, ce doit être 2.0.0
-        if (req.query.version !== undefined && req.query.version != "2.0.0") {
+        if (req.query.version !== undefined && req.query.version !== "2.0.0") {
             res.status(400).json(new Exceptions.BadRequestException("Only VERSION 2.0.0 is supported"));
         }
 
-        // Service WFS obligé
-        if (req.query.service === null) {
-            res.status(400).json(new Exceptions.BadRequestException("SERVICE field have to be present"));
-        }
-        if (req.query.service.toLowerCase() != "wfs") {
+        // On ne gère que le WFS, donc si on précise un service, ce doit être WFS
+        if (req.query.service !== undefined && req.query.service !== "2.0.0") {
             res.status(400).json(new Exceptions.BadRequestException("Only SERVICE WFS is supported"));
         }
 

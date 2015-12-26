@@ -45,6 +45,7 @@ Datasource.prototype.ownFeatureType = function(testFeatureType) {
 };
 
 Datasource.prototype.getFeature = function(requestedFeatureType, max, properties, sort, callback) {
+    console.log("getFeature");
     this.connector.select(
         requestedFeatureType, max, properties, sort,
         callback
@@ -52,6 +53,7 @@ Datasource.prototype.getFeature = function(requestedFeatureType, max, properties
 };
 
 Datasource.prototype.getFeatureById = function(requestedFeatureType, properties, objId, callback) {
+    console.log("getFeatureById");
     this.connector.selectById(
         requestedFeatureType, properties, objId,
         callback
@@ -59,6 +61,7 @@ Datasource.prototype.getFeatureById = function(requestedFeatureType, properties,
 };
 
 Datasource.prototype.getFeatureByBbox = function(requestedFeatureType, max, properties, sort, bbox, srs, callback) {
+    console.log("getFeatureByBbox");
     this.connector.selectByBbox(
         requestedFeatureType, max, properties, sort, bbox, srs,
         callback

@@ -47,7 +47,7 @@ function ConnectorPostgresql (params) {
     this.conString = "postgresql://"+this.user+":"+this.passwd+"@"+this.host+":"+this.port+"/"+this.dbname;
 
     /* Optionnel : si pas de schéma précisé, on part sur 'public' */
-    if (! params.hasOwnProperty('schemaName') || params.schemaName === null) {
+    if (! params.hasOwnProperty('schemaName') || params.schemaName === null || params.schemaName === undefined) {
         params.schemaName = 'public';
     }   
     this.schemaName = params.schemaName;
@@ -146,6 +146,7 @@ ConnectorPostgresql.prototype.getFeatureTypes = function () {
             if (table.hasOwnProperty("geometry")) {
                 // la propriété géométrique est demandée en GeoJSON
                 allProperties.push("st_asGeoJSON(" + table.geometry.column + ") AS jsongeometry");
+                allProperties.push("'urn:ogc:def:crs:EPSG::" + table.geometry.srid + "' AS jsoncrs");
             }
             table.allAttributes = allProperties.join(",");
 
@@ -188,6 +189,7 @@ ConnectorPostgresql.prototype.translateProperties = function(tableName, properti
         if (this.tables[tableName].hasOwnProperty("geometry") && p === this.tables[tableName].geometry.column) {
             // la propriété demandée est la colonne géométrique, on ajoute la conversion en GeoJSON
             finalProperties.push("st_asGeoJSON(" + p + ") AS jsongeometry");
+            finalProperties.push("'urn:ogc:def:crs:EPSG::" + this.tables[tableName].geometry.srid + "'' AS jsoncrs");
         } else if (this.tables[tableName].attributes.hasOwnProperty(p)) {
             finalProperties.push(p);
         } else {
@@ -209,7 +211,7 @@ ConnectorPostgresql.prototype.getFeatureTypeInformations = function(tableName) {
 ConnectorPostgresql.prototype.select = function(requestedTable, max, properties, sort, callback) {
 
     properties = this.translateProperties(requestedTable, properties);
-    var sqlRequest = "SELECT "+properties+" FROM "+requestedTable+" "+translateSort(sort)+" LIMIT "+max+";";
+    var sqlRequest = "SELECT "+properties+" FROM "+this.schemaName+"."+requestedTable+" "+translateSort(sort)+" LIMIT "+max+";";
 
     PGquery.connectionParameters = this.conString;
     
@@ -223,10 +225,10 @@ ConnectorPostgresql.prototype.select = function(requestedTable, max, properties,
 
 ConnectorPostgresql.prototype.selectById = function(requestedTable, properties, objId, callback) {
     properties = this.translateProperties(requestedTable, properties);
-    var sqlRequest = "SELECT "+properties+" FROM "+requestedTable+" WHERE gid = "+objId+";";
+    var sqlRequest = "SELECT "+properties+" FROM "+this.schemaName+"."+requestedTable+" WHERE gid = "+objId+";";
 
     PGquery.connectionParameters = this.conString;
-    
+
     PGquery(
         sqlRequest,
         function(err, rows, result) {
@@ -248,7 +250,7 @@ ConnectorPostgresql.prototype.selectByBbox = function(requestedTable, max, prope
 
     var geomColumnName = this.tables[requestedTable].geometry.column;
     var nativeSrid = this.tables[requestedTable].geometry.srid;
-    var sqlRequest = "SELECT "+properties+" FROM "+requestedTable+" "+translateBbox(srs, bbox, geomColumnName, nativeSrid)+" "+translateSort(sort)+" LIMIT "+max+";";
+    var sqlRequest = "SELECT "+properties+" FROM "+this.schemaName+"."+requestedTable+" "+translateBbox(srs, bbox, geomColumnName, nativeSrid)+" "+translateSort(sort)+" LIMIT "+max+";";
 
     PGquery.connectionParameters = this.conString;
     
@@ -270,7 +272,7 @@ module.exports.Model = ConnectorPostgresql;
 
 function translateFeatures (rawResults) {
 
-    if (rawResults === null) return null;
+    if (rawResults === null || rawResults === undefined) return null;
 
     var geoJSON = {
         "type": "FeatureCollection",
@@ -278,6 +280,7 @@ function translateFeatures (rawResults) {
         "features": []
     };
 
+    var crs = null;
 
     for (var i = 0; i < rawResults.length; i++) {
         var rawFeature = rawResults[i];
@@ -288,13 +291,24 @@ function translateFeatures (rawResults) {
 
         for (var att in rawFeature) {
             if (att === "jsongeometry") {
-                feature.geometry = rawFeature.jsongeometry;
+                feature.geometry = JSON.parse(rawFeature.jsongeometry);
+            } else if (att === "jsoncrs") {
+                crs = rawFeature.jsoncrs;
             } else {
                 feature.properties[att] = rawFeature[att];
             }
         }
 
         geoJSON.features.push(feature);
+    }
+
+    if (crs !== null) {
+        geoJSON.crs = {
+            "type": "name",
+            "properties": {
+                "name": crs
+            }
+        }
     }
 
     return geoJSON;
