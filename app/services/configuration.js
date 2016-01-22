@@ -1,8 +1,21 @@
+/*jslint node: true */
+
 var LayerService = require('../services/layer');
 var DatasourceService = require('../services/datasource');
 var StoredQueryService = require('../services/storedQuery');
 var Exceptions = require('../models/exceptions');
 var fs = require('fs');
+
+var port;
+var defaultMax;
+
+module.exports.getPort = function () {
+    return port;
+};
+
+module.exports.getDefaultMax = function () {
+    return defaultMax;
+};
 
 function load (file) {
 
@@ -27,6 +40,8 @@ function load (file) {
         throw new Exceptions.ConfigurationErrorException("Port have to be provided in the configuration file (server / port) and have to be an integer : " + file);
     }
 
+    port = config.server.port;
+
     if (config.config.layersDir === null) {
         throw new Exceptions.ConfigurationErrorException("Layers' directory have to be provided in the configuration file (config / layersDir) : " + file);
     }
@@ -43,6 +58,8 @@ function load (file) {
         console.log("No default maxFeatureCount defined in 'service' section : it will be 500");
         config.service.maxFeatureCount = 500;   
     }
+
+    defaultMax = config.service.maxFeatureCount;
 
     try {
         DatasourceService.load(config.config.datasourcesDir);

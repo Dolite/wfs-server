@@ -1,3 +1,5 @@
+/*jslint node: true */
+
 var express = require('express');
 var bodyParser = require('body-parser');
 var routing = require('./app/routes/index');

@@ -6,6 +6,7 @@
         "host":"localhost",
         "port":"5432",
         "user":"reader",
-        "passwd":"reader"
+        "passwd":"reader",
+        "schemaName":"geofla"
     }
 }

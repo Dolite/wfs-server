@@ -1,3 +1,5 @@
+/*jslint node: true */
+
 var fs = require('fs');
 var Exceptions = require('./exceptions');
 var Database = require('./datasource');
@@ -9,44 +11,89 @@ var defaultMaxFeatureCount;
 /************************ Modèle ***********************/
 /*******************************************************/
 
-function Layer (name, sourceName, tables, max) {
-    this.name = name;
-    
-    this.source = Database.getOne(sourceName);
+/*
+Exceptions possibles :
+- MissingAttributeException
+- BadRequestException
+*/
+function Layer (obj) {
 
-    if (max === null) max = defaultMaxFeatureCount;
-    this.maxFeatureCount = max;
+    /* Le nom du layer */
+    if (! obj.hasOwnProperty('name') || obj.name === null) {
+        throw new Exceptions.MissingAttributeException("Layer", "name");
+    }
+    this.name = obj.name;
 
-    this.tables = Array.from(tables);
+    /* Le title du layer */
+    if (! obj.hasOwnProperty('title') || obj.title === null) {
+        throw new Exceptions.MissingAttributeException("Layer", "title");
+    }
+    this.title = obj.title;
+
+    /* La source du layer */
+    if (! obj.hasOwnProperty('source') || obj.source === null) {
+        throw new Exceptions.MissingAttributeException("Layer", "source");
+    }
+    var ds = Database.getObject(obj.source);
+    if (ds === null) {
+        throw new Exceptions.BadRequestException("'source' is not an existing datasource name : "+obj.source);
+    }
+    this.source = ds;
+
+    /* La liste des feature type du layer */
+    if (! obj.hasOwnProperty('featureTypes') || obj.featureTypes === null) {
+        throw new Exceptions.MissingAttributeException("Layer", "featureTypes");
+    }
+
+    if (! Array.isArray(obj.featureTypes) || obj.featureTypes.length === 0) {
+        throw new Exceptions.BadRequestException("'Datasource.featureTypes' is missing or is not a not empty array");
+    }
+    for (var i=0; i<obj.featureTypes.length; i++) {
+        if (! this.source.ownFeatureType(obj.featureTypes[i])) {
+            throw new Exceptions.BadRequestException("Table '"+obj.featureTypes[i]+"' is not available in the datasource "+obj.source);
+        }
+    }
+    this.featureTypes = Array.from(obj.featureTypes);
+
+    if (obj.maxFeatureCount === null) obj.maxFeatureCount = defaultMaxFeatureCount;
+    this.maxFeatureCount = obj.maxFeatureCount;
 }
 
 
-Layer.prototype.getFeature = function(requestedTable, max, properties, objId, sort, bbox, srs, callback) {
-    if (this.tables.indexOf(requestedTable) == -1) {
-        throw new Exceptions.BadRequestException("Requested feature type '"+requestedTable+"' does not exist for the layer '" + this.name + "'");
+Layer.prototype.getFeature = function(requestedFeatureType, max, properties, objId, sort, bbox, srs, callback) {
+    if (this.featureTypes.indexOf(requestedFeatureType) == -1) {
+        throw new Exceptions.BadRequestException("Requested feature type '"+requestedFeatureType+"' does not exist for the layer '" + this.name + "'");
     }
 
-    if (! this.source.ownTable(requestedTable)) {
-        throw new Exceptions.BadRequestException("Requested feature type '"+requestedTable+"' does not exist for the datasource '" + this.source.name + "'");
+    if (! this.source.ownFeatureType(requestedFeatureType)) {
+        throw new Exceptions.BadRequestException("Requested feature type '"+requestedFeatureType+"' does not exist for the datasource '" + this.source.name + "'");
     }
 
     /* On determine le maxFeatureCount : celui par défaut ou celui dans la requête */
-    if (max === null || (! isNaN(parseFloat(max)) && isFinite(max))) {
+    if (max === undefined || ! (! isNaN(parseFloat(max)) && isFinite(max))) {
         max = this.maxFeatureCount;
     }
 
-    if (objId !== null) {
-        console.log("getFeatureById");
-        this.source.getFeatureById(requestedTable, properties, objId, callback);  
+    if (objId !== undefined) {
+        this.source.getFeatureById(requestedFeatureType, properties, objId, callback);  
     }
-    else if (bbox !== null && srs !== null) {
-        console.log("getFeatureByBbox");
-        this.source.getFeatureByBbox(requestedTable, max, properties, sort, bbox, srs, callback);
+    else if (bbox !== undefined && srs !== undefined) {
+        this.source.getFeatureByBbox(requestedFeatureType, max, properties, sort, bbox, srs, callback);
     }
     else {
-        console.log("getFeature");
-        this.source.getFeature(requestedTable, max, properties, sort, callback);
+        this.source.getFeature(requestedFeatureType, max, properties, sort, callback);
     }    
+};
+
+Layer.prototype.getPersistent = function() {
+    var obj = {
+        "name":this.name,
+        "title":this.title,
+        "source":this.source.name,
+        "featureTypes":this.featureTypes,
+        "maxFeatureCount":this.maxFeatureCount
+    };
+    return obj;
 };
 
 //module.exports.Layer = Layer;
@@ -55,61 +102,41 @@ Layer.prototype.getFeature = function(requestedTable, max, properties, objId, so
 /********************* Méthodes CRUD *******************/
 /*******************************************************/
 
-function isValidLayer (obj) {
-
-    if (obj.name === null) {
-        return "'name' is missing";
-    }
-    if (obj.source === null) {
-        return "'source' is missing";
-    }
-    if (Database.getOne(obj.source) === null) {
-        return "'source' is not an existing datasource name : "+obj.source;
-    }
-    if (obj.tables === null || ! Array.isArray(obj.tables) || obj.tables.length === 0) {
-        return "'tables' is missing or is not a not empty array";
-    }
-    for (var i=0; i<obj.tables.length; i++) {
-        if (! Database.getOne(obj.source).ownTable(obj.tables[i])) {
-            return "Table '"+obj.tables[i]+"' is not available in the datasource "+obj.source;
-        }
-    } 
-    
-
-    return null;
-}
-
-
-module.exports.isValid = isValidLayer;
-
+/*
+Exceptions possibles :
+- MissingAttributeException
+- ConflictException
+- MissingAttributeException
+- ConfigurationErrorException
+*/
 function createLayer(obj, save) {
-    if (isValidLayer(obj) === null) {
 
-        if (getLayer(obj.name) !== null) {
-            throw new Exceptions.ConflictException("Provided layer owns a name already used");
+    var lay = new Layer(obj);
+    if (getLayer(lay.name) !== null) {
+        throw new Exceptions.ConflictException("Provided layer owns a name already used : " + obj.name);
+    }
+    loadedLayers[lay.name] = lay;
+
+    if (save !== null && save) {
+        var jsonLay = JSON.stringify(lay.getPersistent());
+        var file = storePath + "/" + lay.name + ".json";
+        try {
+            fs.writeFileSync(file, jsonLay);            
+        } catch (e) {
+            throw new Exceptions.ConfigurationErrorException("Impossible to write the layer file : " + file);
         }
+    }
 
-        var lay = new Layer(obj.name, obj.source, obj.tables, obj.maxFeatureCount);
-        loadedLayers[lay.name] = lay;
-
-        if (save !== null && save) {
-            var jsonLay = JSON.stringify(lay);
-            var file = storePath + "/" + lay.name + ".json";
-            try {
-                fs.writeFileSync(file, jsonLay);            
-            } catch (e) {
-                throw new Exceptions.ConfigurationErrorException("Impossible to write the layer file : " + file);
-            }
-        }
-
-        return lay;
-    } else {
-        throw new Exceptions.BadRequestException("Provided object cannot be cast as a layer : " + isValidLayer(obj));
-    }    
+    return lay;  
 }
 
 module.exports.create = createLayer;
 
+/*
+Exceptions possibles :
+- NotFoundException
+- ConfigurationErrorException
+*/
 function deleteLayer (name) {
     if (getLayer(name) === null) {
         throw new Exceptions.NotFoundException("Layer to delete does not exist : " + name);
@@ -126,54 +153,71 @@ function deleteLayer (name) {
 
 module.exports.delete = deleteLayer;
 
+/*
+Exceptions possibles :
+- MissingAttributeException
+- ConflictException
+- NotFoundException
+- MissingAttributeException
+- ConfigurationErrorException
+*/
 function updateLayer (name, obj) {
     obj.name = name;
     if (getLayer(name) === null) {
-        throw new NotFoundException("Layer to update does not exist : " + name);
+        throw new Exceptions.NotFoundException("Layer to update does not exist : " + name);
     }
-
-    if (isValidLayer(obj) === null) {
-
-        var lay = new Layer(obj.name, obj.source, obj.tables, obj.maxFeatureCount);
-        loadedLayers[lay.name] = lay;
-
-        var jsonLay = JSON.stringify(lay);
-        var file = storePath + "/" + lay.name + ".json";
-        try {
-            fs.writeFileSync(file, jsonLay);            
-        } catch (e) {
-            throw new Exceptions.ConfigurationErrorException("Impossible to write the layer file : " + file);
-        }
-
-        return lay;
-    } else {
-        throw new Exceptions.BadRequestException("Provided object cannot be cast as a layer : " + isValidLayer(obj));
-    } 
+    delete loadedLayers[name];
+    createLayer(obj, true);
 }
 
 module.exports.update = updateLayer;
 
+/*******************************************************/
+/******************** Layers chargés *******************/
+/*******************************************************/
+
 var loadedLayers = {};
 
 function getLayers () {
-    return loadedLayers;
+    var simpleLayers = {};
+    for (var l in loadedLayers) {
+        simpleLayers[l] = loadedLayers[l].getPersistent();
+    }
+    return simpleLayers;
 }
 
 module.exports.getAll = getLayers;
 
 function getLayer (layerName) {
     if (loadedLayers.hasOwnProperty(layerName)) {
-        return loadedLayers[layerName];
+        return loadedLayers[layerName].getPersistent();
     } else {
         return null;
     }
 }
 module.exports.getOne = getLayer;
 
+function getLayerObject (layerName) {
+    if (loadedLayers.hasOwnProperty(layerName)) {
+        return loadedLayers[layerName];
+    } else {
+        return null;
+    }
+}
+
+module.exports.getObject = getLayerObject;
+
 /*******************************************************/
 /****************** Chargement complet *****************/
 /*******************************************************/
 
+/*
+Exceptions possibles :
+- BadRequestException
+- ConflictException
+- PostgresqlErrorException
+- ConfigurationErrorException
+*/
 function loadLayers(dir, max) {
     if (dir !== null) storePath = dir;
     if (max !== null) defaultMaxFeatureCount = max;
@@ -195,6 +239,7 @@ function loadLayers(dir, max) {
         var file = storePath + "/" + files[i];
         try{
             var lay = JSON.parse(fs.readFileSync(file, 'utf8'));
+
             createLayer(lay, false);
         } catch (e) {
             console.log(e.message);
