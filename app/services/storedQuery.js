@@ -1,4 +1,4 @@
-/*jslint node: true */
+/* jslint node: true */
 
 var StoredQuery = require('../models/storedQuery');
 var Exceptions = require('../models/exceptions');

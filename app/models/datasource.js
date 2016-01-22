@@ -1,4 +1,4 @@
-/*jslint node: true */
+/* jslint node: true */
 
 var fs = require('fs');
 var Exceptions = require('./exceptions');

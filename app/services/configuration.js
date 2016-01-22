@@ -1,4 +1,4 @@
-/*jslint node: true */
+/* jslint node: true */
 
 var LayerService = require('../services/layer');
 var DatasourceService = require('../services/datasource');

@@ -1,4 +1,4 @@
-/*jslint node: true */
+/* jslint node: true */
 
 var Exceptions = require('../models/exceptions');
 var PG = require('pg');
