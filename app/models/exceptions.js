@@ -1,3 +1,5 @@
+/*jslint node: true */
+
 module.exports.ConfigurationErrorException = function ConfigurationErrorException (message) {
     this.message = message;
 };

@@ -1,3 +1,5 @@
+/*jslint node: true */
+
 var fs = require('fs');
 var Exceptions = require('./exceptions');
 var Database = require('./datasource');

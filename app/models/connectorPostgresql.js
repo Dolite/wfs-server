@@ -1,3 +1,5 @@
+/*jslint node: true */
+
 var Exceptions = require('../models/exceptions');
 var PG = require('pg');
 var PGquery = require('pg-query');

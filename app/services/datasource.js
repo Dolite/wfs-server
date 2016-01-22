@@ -1,3 +1,5 @@
+/*jslint node: true */
+
 var Datasource = require('../models/datasource');
 var Exceptions = require('../models/exceptions');
 

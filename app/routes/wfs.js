@@ -1,3 +1,5 @@
+/*jslint node: true */
+
 var express = require('express');
 var router = express.Router();
 var Exceptions = require('../models/exceptions');

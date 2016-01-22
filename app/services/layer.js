@@ -1,3 +1,5 @@
+/*jslint node: true */
+
 var Layer = require('../models/layer');
 var Exceptions = require('../models/exceptions');
 

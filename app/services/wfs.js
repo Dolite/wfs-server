@@ -1,3 +1,5 @@
+/*jslint node: true */
+
 var Exceptions = require('../models/exceptions');
 var fs = require('fs');
 var jade = require('jade');

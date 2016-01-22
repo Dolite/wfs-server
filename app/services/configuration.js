@@ -1,3 +1,5 @@
+/*jslint node: true */
+
 var LayerService = require('../services/layer');
 var DatasourceService = require('../services/datasource');
 var StoredQueryService = require('../services/storedQuery');
