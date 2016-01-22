@@ -1,0 +1,6 @@
+{
+    "name":"limadm",
+    "source":"postgres1",
+    "tables":["departements","regions"],
+    "maxFeatureCount":13
+}

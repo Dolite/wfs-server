@@ -1,0 +1,38 @@
+{
+  "name": "wfs-server",
+  "version": "1.0.0",
+  "description": "WFS server",
+  "main": "app.js",
+  "dependencies": {
+    "body-parser": "^1.14.1",
+    "express": "^4.13.3",
+    "minimist": "^1.2.0",
+    "nodemon": "^1.8.1",
+    "pg": "^4.4.3",
+    "pg-native": "^1.9.0",
+    "pg-query": "^0.11.0"
+  },"devDependencies": {
+    "debug": "~2.1.1",
+    "grunt": "~0.4.4",
+    "grunt-contrib-clean": "~0.6.0",
+    "grunt-contrib-jshint": "~0.9.2",
+    "grunt-contrib-watch": "~0.6.1",
+    "grunt-env": "~0.4.1",
+    "grunt-express-server": "~0.4.19",
+    "grunt-mocha-test": "^0.12.7",
+    "grunt-execute": "~0.2.2",
+    "grunt-npm-install": "~0.1.0",
+    "grunt-shell": "~0.6.4"
+  },
+  "scripts": {
+    "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dolite/wfs-server.git"
+  },
+  "keywords": [
+    "WFS"
+  ],
+  "author": "Dolite"
+}
