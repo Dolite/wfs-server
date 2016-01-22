@@ -1,4 +1,6 @@
-/* jslint node: true */
+/*global
+    exports, global, module, process, require, console
+*/
 
 var LayerService = require('../services/layer');
 var DatasourceService = require('../services/datasource');
@@ -23,7 +25,7 @@ function load (file) {
 
     try {
         fs.statSync(file);
-    } catch (e) {
+    } catch (e1) {
         throw new Exceptions.ConfigurationErrorException("Configuration file does not exist : " + file);
     }
 
@@ -32,7 +34,7 @@ function load (file) {
     var config;
     try{
         config = JSON.parse(fs.readFileSync(file, 'utf8'));
-    } catch (e) {
+    } catch (e2) {
         throw new Exceptions.ConfigurationErrorException("Configuration file is not a valid JSON file : " + file);
     }
 
@@ -69,8 +71,8 @@ function load (file) {
         StoredQueryService.load(config.config.storedQuerysDir);
         console.log(StoredQueryService.getNumber() + " stored querie(s) loaded");
     }
-    catch (e) {
-        throw e;
+    catch (e3) {
+        throw e3;
     }
 
 

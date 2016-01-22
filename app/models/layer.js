@@ -1,4 +1,6 @@
-/* jslint node: true */
+/*global
+    exports, global, module, process, require, console
+*/
 
 var fs = require('fs');
 var Exceptions = require('./exceptions');
@@ -6,6 +8,41 @@ var Database = require('./datasource');
 
 var storePath;
 var defaultMaxFeatureCount;
+
+/*******************************************************/
+/******************** Layers chargés *******************/
+/*******************************************************/
+
+var loadedLayers = {};
+
+function getLayers () {
+    var simpleLayers = {};
+    for (var l in loadedLayers) {
+        simpleLayers[l] = loadedLayers[l].getPersistent();
+    }
+    return simpleLayers;
+}
+
+module.exports.getAll = getLayers;
+
+function getLayer (layerName) {
+    if (loadedLayers.hasOwnProperty(layerName)) {
+        return loadedLayers[layerName].getPersistent();
+    } else {
+        return null;
+    }
+}
+module.exports.getOne = getLayer;
+
+function getLayerObject (layerName) {
+    if (loadedLayers.hasOwnProperty(layerName)) {
+        return loadedLayers[layerName];
+    } else {
+        return null;
+    }
+}
+
+module.exports.getObject = getLayerObject;
 
 /*******************************************************/
 /************************ Modèle ***********************/
@@ -55,7 +92,7 @@ function Layer (obj) {
     }
     this.featureTypes = Array.from(obj.featureTypes);
 
-    if (obj.maxFeatureCount === null) obj.maxFeatureCount = defaultMaxFeatureCount;
+    if (obj.maxFeatureCount === null) {obj.maxFeatureCount = defaultMaxFeatureCount;}
     this.maxFeatureCount = obj.maxFeatureCount;
 }
 
@@ -172,40 +209,6 @@ function updateLayer (name, obj) {
 
 module.exports.update = updateLayer;
 
-/*******************************************************/
-/******************** Layers chargés *******************/
-/*******************************************************/
-
-var loadedLayers = {};
-
-function getLayers () {
-    var simpleLayers = {};
-    for (var l in loadedLayers) {
-        simpleLayers[l] = loadedLayers[l].getPersistent();
-    }
-    return simpleLayers;
-}
-
-module.exports.getAll = getLayers;
-
-function getLayer (layerName) {
-    if (loadedLayers.hasOwnProperty(layerName)) {
-        return loadedLayers[layerName].getPersistent();
-    } else {
-        return null;
-    }
-}
-module.exports.getOne = getLayer;
-
-function getLayerObject (layerName) {
-    if (loadedLayers.hasOwnProperty(layerName)) {
-        return loadedLayers[layerName];
-    } else {
-        return null;
-    }
-}
-
-module.exports.getObject = getLayerObject;
 
 /*******************************************************/
 /****************** Chargement complet *****************/
@@ -219,8 +222,8 @@ Exceptions possibles :
 - ConfigurationErrorException
 */
 function loadLayers(dir, max) {
-    if (dir !== null) storePath = dir;
-    if (max !== null) defaultMaxFeatureCount = max;
+    if (dir !== null) {storePath = dir;}
+    if (max !== null) {defaultMaxFeatureCount = max;}
 
     console.log("Browse layers' directory "+storePath);
 
@@ -228,7 +231,7 @@ function loadLayers(dir, max) {
     try {
         files = fs.readdirSync(storePath);
     }
-    catch (e) {
+    catch (e1) {
         throw new Exceptions.ConfigurationErrorException("Unable to browse layers' directory "+storePath);
     }
 
@@ -241,8 +244,8 @@ function loadLayers(dir, max) {
             var lay = JSON.parse(fs.readFileSync(file, 'utf8'));
 
             createLayer(lay, false);
-        } catch (e) {
-            console.log(e.message);
+        } catch (e2) {
+            console.log(e2.message);
             console.log("Layer file is not a valid JSON file : " + file);
             continue;
         }

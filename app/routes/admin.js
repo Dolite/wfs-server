@@ -1,4 +1,6 @@
-/* jslint node: true */
+/*global
+    exports, global, module, process, require, console
+*/
 
 var express = require('express');
 var router = express.Router();

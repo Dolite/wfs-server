@@ -1,4 +1,6 @@
-/* jslint node: true */
+/*global
+    exports, global, module, process, require, console
+*/
 
 module.exports.ConfigurationErrorException = function ConfigurationErrorException (message) {
     this.message = message;

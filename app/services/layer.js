@@ -1,4 +1,6 @@
-/* jslint node: true */
+/*global
+    exports, global, module, process, require, console
+*/
 
 var Layer = require('../models/layer');
 var Exceptions = require('../models/exceptions');

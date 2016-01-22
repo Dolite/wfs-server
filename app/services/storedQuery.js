@@ -1,4 +1,6 @@
-/* jslint node: true */
+/*global
+    exports, global, module, process, require, console
+*/
 
 var StoredQuery = require('../models/storedQuery');
 var Exceptions = require('../models/exceptions');

@@ -1,4 +1,6 @@
-/* jslint node: true */
+/*global
+    exports, global, module, process, require, console
+*/
 
 var Exceptions = require('../models/exceptions');
 var fs = require('fs');
@@ -25,7 +27,7 @@ module.exports.getCapabilities = function (req, res) {
         for (var i = 0; i < lay.featureTypes.length; i++) {
             var ft = lay.featureTypes[i];
             var infos = lay.source.connector.getFeatureTypeInformations(ft);
-            if (infos === null) continue;
+            if (infos === null) {continue;}
 
             var ftInfos = {};
 

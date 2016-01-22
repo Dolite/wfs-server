@@ -1,9 +1,94 @@
-/* jslint node: true */
+/*global
+    exports, global, module, process, require, console
+*/
 
 var Exceptions = require('../models/exceptions');
 var PG = require('pg');
 var PGquery = require('pg-query');
 var PGnative = require('pg-native');
+
+/*******************************************************/
+/************************* UTILS ***********************/
+/*******************************************************/
+
+
+function translateFeatures (rawResults) {
+
+    if (rawResults === null || rawResults === undefined) {return null;}
+
+    var geoJSON = {
+        "type": "FeatureCollection",
+        "totalFeatures": rawResults.length,
+        "features": []
+    };
+
+    var crs = null;
+
+    for (var i = 0; i < rawResults.length; i++) {
+        var rawFeature = rawResults[i];
+        var feature = {
+            "type": "Feature",
+            "properties": {}
+        };
+
+        for (var att in rawFeature) {
+            if (att === "jsongeometry") {
+                feature.geometry = JSON.parse(rawFeature.jsongeometry);
+            } else if (att === "jsoncrs") {
+                crs = rawFeature.jsoncrs;
+            } else {
+                feature.properties[att] = rawFeature[att];
+            }
+        }
+
+        geoJSON.features.push(feature);
+    }
+
+    if (crs !== null) {
+        geoJSON.crs = {
+            "type": "name",
+            "properties": {
+                "name": crs
+            }
+        };
+    }
+
+    return geoJSON;
+}
+
+// Convertisseur du paramètre sort
+function translateSort (sortParam) {
+    //sortBy=attribute(+A|+D)
+    // le plus est tranformé en espace
+    if (sortParam === undefined) {return "";}
+    var s = sortParam.split(' ');
+
+    var order = "ASC";
+    if (s.length == 2 && s[1] == "D") {
+        order = "DESC";
+    }
+
+    return "ORDER BY " + s[0] + " " + order;
+}
+
+function translateBbox (srsParam, bboxParam, geomColumn, sridGeom) {
+
+    // Si il  manque une information sur les géométries on ne retourne pas de filtre géométrique
+    if (geomColumn === null || sridGeom === null) {return "";}
+
+    if (srsParam === undefined) {return "";}
+    var srs = srsParam.split(':');
+    if (srs.length != 2 || srs[0].toLowerCase() != "epsg") {throw new Exceptions.BadRequestException("SRSNAME field not valid (EPSG:SRID format expected) : "+srsParam);}
+
+    if (bboxParam === undefined) {return "";}
+    var bb = bboxParam.split(',');
+    if (bb.length != 4) {throw new Exceptions.BadRequestException("BBOX field not valid (4 values separated by comma expected) : "+bboxParam);}
+    var polygon = "POLYGON(("+bb[0]+" "+bb[1]+","+bb[2]+" "+bb[1]+","+bb[2]+" "+bb[3]+","+bb[0]+" "+bb[3]+","+bb[0]+" "+bb[1]+"))";
+
+    //return "WHERE st_intersects("+geomColumn+",st_transform(st_geomfromewkt('SRID="+srs[1]+";"+polygon+"'),"+sridGeom+"))";
+    // Calcul d'intersection plus rapide mais moins précis
+    return "WHERE "+geomColumn+" && st_transform(st_geomfromewkt('SRID="+srs[1]+";"+polygon+"'),"+sridGeom+")";
+}
 
 /*******************************************************/
 /************************ Modèle ***********************/
@@ -87,7 +172,7 @@ ConnectorPostgresql.prototype.getFeatureTypes = function () {
         var geoms = {};
         var srids = {};
         for (var i=0; i<rawgeoms.length; i++) {
-            geoms[rawgeoms[i].name] = rawgeoms[i].geom
+            geoms[rawgeoms[i].name] = rawgeoms[i].geom;
             srids[rawgeoms[i].name] = rawgeoms[i].srid;
         }
 
@@ -102,7 +187,7 @@ ConnectorPostgresql.prototype.getFeatureTypes = function () {
             var tableName = rawtables[i].name;
 
             // 1
-            if (postgisTables.indexOf(tableName) !== -1) continue;
+            if (postgisTables.indexOf(tableName) !== -1) {continue;}
 
             var table = {};
 
@@ -134,7 +219,7 @@ ConnectorPostgresql.prototype.getFeatureTypes = function () {
             var atts = {};
             for (var j=0; j<rawatts.length; j++) {
                 // On ne liste pas là la colonne géometrique
-                if (rawatts[j].name === table.geometry.column) continue;
+                if (rawatts[j].name === table.geometry.column) {continue;}
 
                 atts[rawatts[j].name] = rawatts[j].type;
             }
@@ -153,7 +238,7 @@ ConnectorPostgresql.prototype.getFeatureTypes = function () {
             table.allAttributes = allProperties.join(",");
 
             // On stocke ces informations
-            this.tables[tableName] = table
+            this.tables[tableName] = table;
 
         }
 
@@ -267,85 +352,3 @@ ConnectorPostgresql.prototype.selectByBbox = function(requestedTable, max, prope
 module.exports.Model = ConnectorPostgresql;
 
 
-/*******************************************************/
-/************************* UTILS ***********************/
-/*******************************************************/
-
-
-function translateFeatures (rawResults) {
-
-    if (rawResults === null || rawResults === undefined) return null;
-
-    var geoJSON = {
-        "type": "FeatureCollection",
-        "totalFeatures": rawResults.length,
-        "features": []
-    };
-
-    var crs = null;
-
-    for (var i = 0; i < rawResults.length; i++) {
-        var rawFeature = rawResults[i];
-        var feature = {
-            "type": "Feature",
-            "properties": {}
-        };
-
-        for (var att in rawFeature) {
-            if (att === "jsongeometry") {
-                feature.geometry = JSON.parse(rawFeature.jsongeometry);
-            } else if (att === "jsoncrs") {
-                crs = rawFeature.jsoncrs;
-            } else {
-                feature.properties[att] = rawFeature[att];
-            }
-        }
-
-        geoJSON.features.push(feature);
-    }
-
-    if (crs !== null) {
-        geoJSON.crs = {
-            "type": "name",
-            "properties": {
-                "name": crs
-            }
-        }
-    }
-
-    return geoJSON;
-}
-
-// Convertisseur du paramètre sort
-function translateSort (sortParam) {
-    //sortBy=attribute(+A|+D)
-    // le plus est tranformé en espace
-    if (sortParam === undefined) return "";
-    var s = sortParam.split(' ');
-
-    var order = "ASC";
-    if (s.length == 2 && s[1] == "D") {
-        order = "DESC";
-    }
-
-    return "ORDER BY " + s[0] + " " + order;
-}
-
-function translateBbox (srsParam, bboxParam, geomColumn, sridGeom) {
-
-    // Si il  manque une information sur les géométries on ne retourne pas de filtre géométrique
-    if (geomColumn === null || sridGeom === null) return "";
-
-    if (srsParam === undefined) return "";
-    var srs = srsParam.split(':');
-    if (srs.length != 2 || srs[0].toLowerCase() != "epsg") throw new Exceptions.BadRequestException("SRSNAME field not valid (EPSG:SRID format expected) : "+srsParam);
-
-    if (bboxParam === undefined) return "";
-    var bb = bboxParam.split(',');
-    if (bb.length != 4) throw new Exceptions.BadRequestException("BBOX field not valid (4 values separated by comma expected) : "+bboxParam);
-    var polygon = "POLYGON(("+bb[0]+" "+bb[1]+","+bb[2]+" "+bb[1]+","+bb[2]+" "+bb[3]+","+bb[0]+" "+bb[3]+","+bb[0]+" "+bb[1]+"))";
-
-    //return "WHERE st_intersects("+geomColumn+",st_transform(st_geomfromewkt('SRID="+srs[1]+";"+polygon+"'),"+sridGeom+"))";
-    // Calcul d'intersection plus rapide mais moins précis
-    return "WHERE "+geomColumn+" && st_transform(st_geomfromewkt('SRID="+srs[1]+";"+polygon+"'),"+sridGeom+")";
-}

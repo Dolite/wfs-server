@@ -1,10 +1,50 @@
-/* jslint node: true */
+/*global
+    exports, global, module, process, require, console
+*/
 
 var fs = require('fs');
 var Exceptions = require('./exceptions');
 var ConnectorPostgresql = require('./connectorPostgresql').Model;
 
 var storePath;
+
+/*******************************************************/
+/****************** Datasources chargés ****************/
+/*******************************************************/
+
+var loadedDatasources = {};
+
+function getDatasources () {
+    var simpleDatasources = {};
+    for (var d in loadedDatasources) {
+        simpleDatasources[d] = loadedDatasources[d].getPersistent();
+    }
+    return simpleDatasources;
+}
+
+
+
+module.exports.getAll = getDatasources;
+
+function getDatasource (dsName) {
+    if (loadedDatasources.hasOwnProperty(dsName)) {
+        return loadedDatasources[dsName].getPersistent();
+    } else {
+        return null;
+    }
+}
+
+module.exports.getOne = getDatasource;
+
+function getDatasourceObject (dsName) {
+    if (loadedDatasources.hasOwnProperty(dsName)) {
+        return loadedDatasources[dsName];
+    } else {
+        return null;
+    }
+}
+
+module.exports.getObject = getDatasourceObject;
 
 /*******************************************************/
 /************************ Modèle ***********************/
@@ -156,43 +196,7 @@ function updateDatasource (name, obj) {
 
 module.exports.update = updateDatasource;
 
-/*******************************************************/
-/****************** Datasources chargés ****************/
-/*******************************************************/
 
-var loadedDatasources = {};
-
-function getDatasources () {
-    var simpleDatasources = {};
-    for (var d in loadedDatasources) {
-        simpleDatasources[d] = loadedDatasources[d].getPersistent();
-    }
-    return simpleDatasources;
-}
-
-
-
-module.exports.getAll = getDatasources;
-
-function getDatasource (dsName) {
-    if (loadedDatasources.hasOwnProperty(dsName)) {
-        return loadedDatasources[dsName].getPersistent();
-    } else {
-        return null;
-    }
-}
-
-module.exports.getOne = getDatasource;
-
-function getDatasourceObject (dsName) {
-    if (loadedDatasources.hasOwnProperty(dsName)) {
-        return loadedDatasources[dsName];
-    } else {
-        return null;
-    }
-}
-
-module.exports.getObject = getDatasourceObject;
 
 /*******************************************************/
 /****************** Chargement complet *****************/
@@ -206,14 +210,14 @@ Exceptions possibles :
 - ConfigurationErrorException
 */
 function loadDatasources(dir) {
-    if (dir !== null) storePath = dir;
+    if (dir !== null) {storePath = dir;}
     console.log("Browse datasources' directory "+storePath);
 
     var files;
     try {
         files = fs.readdirSync(storePath);
     }
-    catch (e) {
+    catch (e1) {
         throw new Exceptions.ConfigurationErrorException("Unable to browse datasources' directory "+storePath);
     }
 
@@ -225,8 +229,8 @@ function loadDatasources(dir) {
         try{
             var ds = JSON.parse(fs.readFileSync(file, 'utf8'));
             createDatasource(ds, false);
-        } catch (e) {
-            console.log(e.message);
+        } catch (e2) {
+            console.log(e2.message);
             console.log("Datasource file is not a valid JSON file : " + file);
             continue;
         }

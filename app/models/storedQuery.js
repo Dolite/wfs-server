@@ -1,9 +1,29 @@
-/* jslint node: true */
+/*global
+    exports, global, module, process, require, console
+*/
 
 var fs = require('fs');
 var Exceptions = require('./exceptions');
 
 var storePath;
+
+var loadedStoredQuerys = {};
+
+function getStoredQuerys () {
+    return loadedStoredQuerys;
+}
+
+module.exports.getAll = getStoredQuerys;
+
+function getStoredQuery (squeryName) {
+    if (loadedStoredQuerys.hasOwnProperty(squeryName)) {
+        return loadedStoredQuerys[squeryName];
+    } else {
+        return null;
+    }
+}
+
+module.exports.getOne = getStoredQuery;
 
 /*******************************************************/
 /************************ Modèle ***********************/
@@ -79,7 +99,7 @@ module.exports.delete = deleteStoredQuery;
 function updateStoredQuery (name, obj) {
     obj.name = name;
     if (getStoredQuery(name) === null) {
-        throw new NotFoundException("StoredQuery to update does not exist : " + name);
+        throw new Exceptions.NotFoundException("StoredQuery to update does not exist : " + name);
     }
 
     if (isValidStoredQuery(obj) === null) {
@@ -103,37 +123,19 @@ function updateStoredQuery (name, obj) {
 
 module.exports.update = updateStoredQuery;
 
-var loadedStoredQuerys = {};
-
-function getStoredQuerys () {
-    return loadedStoredQuerys;
-}
-
-module.exports.getAll = getStoredQuerys;
-
-function getStoredQuery (squeryName) {
-    if (loadedStoredQuerys.hasOwnProperty(squeryName)) {
-        return loadedStoredQuerys[squeryName];
-    } else {
-        return null;
-    }
-}
-
-module.exports.getOne = getStoredQuery;
-
 /*******************************************************/
 /****************** Chargement complet *****************/
 /*******************************************************/
 
 function loadStoredQuerys(dir) {
-    if (dir !== null) storePath = dir;
+    if (dir !== null) {storePath = dir;}
     console.log("Browse storedQuerys' directory "+storePath);
 
     var files;
     try {
         files = fs.readdirSync(storePath);
     }
-    catch (e) {
+    catch (e1) {
         throw new Exceptions.ConfigurationErrorException("Unable to browse storedQuerys' directory "+storePath);
     }
 
@@ -145,8 +147,8 @@ function loadStoredQuerys(dir) {
         try{
             var squery = JSON.parse(fs.readFileSync(file, 'utf8'));
             createStoredQuery(squery, false);
-        } catch (e) {
-            console.log(e.message);
+        } catch (e2) {
+            console.log(e2.message);
             console.log("StoredQuery file is not a valid JSON file : " + file);
             continue;
         }
